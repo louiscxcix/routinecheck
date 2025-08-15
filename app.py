@@ -12,8 +12,10 @@ st.set_page_config(
 
 # --- 2. API 키 설정 ---
 try:
+    # Streamlit 클라우드 배포 시 st.secrets에서 키를 로드합니다.
     api_key = st.secrets["GEMINI_API_KEY"]
 except (KeyError, FileNotFoundError):
+    # 로컬 환경 테스트를 위해 사이드바에서 키를 입력받습니다.
     st.sidebar.warning("API 키를 찾을 수 없습니다.")
     api_key = st.sidebar.text_input(
         "여기에 Google AI API 키를 입력하세요.", type="password",
@@ -27,7 +29,7 @@ else:
     st.stop()
 
 
-# --- 3. AI 모델 호출 함수 (프롬프트 수정) ---
+# --- 3. AI 모델 호출 함수 ---
 def generate_routine_analysis_v4(sport, routine_type, current_routine):
     """'Y/N/▲' 평가 및 구조화된 심층 분석을 위한 프롬프트로 AI 호출"""
     model = genai.GenerativeModel('gemini-1.5-flash')
@@ -73,30 +75,41 @@ def generate_routine_analysis_v4(sport, routine_type, current_routine):
         st.error(f"AI 호출 중 오류가 발생했습니다: {e}")
         return None
 
-# --- 4. 결과 파싱 및 UI 표시 함수 ---
+# --- 4. 결과 파싱 및 UI 표시 함수 (UI 개선 버전) ---
 def display_results(result_text):
-    """AI 결과 텍스트를 파싱하여 Streamlit UI에 맞게 표시"""
+    """AI 결과 텍스트를 파싱하여 직관적인 UI로 표시"""
     try:
-        # 섹션별로 텍스트 분리
-        analysis_table_str = re.search(r"1\. 루틴 분석표\s*\n(.*?)\n\n2\.", result_text, re.DOTALL).group(1)
+        # 섹션별로 텍스트 분리 (정규식 강화)
+        analysis_table_str = re.search(r"1\. 루틴 분석표\s*\n(.*?)(?=\n\n2\.|\Z)", result_text, re.DOTALL).group(1)
         summary_str = re.search(r"한 줄 요약:\s*(.*?)\n", result_text).group(1)
-        explanation_str = re.search(r"상세 설명:\s*(.*?)\n\n3\.", result_text, re.DOTALL).group(1)
+        explanation_str = re.search(r"상세 설명:\s*(.*?)(?=\n\n3\.|\Z)", result_text, re.DOTALL).group(1)
         routine_v2_str = re.search(r"3\. 루틴 v2\.0 제안\s*\n(.*?)$", result_text, re.DOTALL).group(1)
 
         # 탭 UI 구성
-        tab1, tab2, tab3 = st.tabs(["📊 루틴 분석표", "📝 종합 분석", "💡 루틴 v2.0 제안"])
+        tab1, tab2, tab3 = st.tabs(["📊 **루틴 분석표**", "📝 **종합 분석**", "💡 **루틴 v2.0 제안**"])
 
         with tab1:
-            st.subheader("✅ 루틴 체크리스트")
-            # 분석표 파싱 및 데이터프레임 생성
+            st.subheader("체크리스트")
+            st.write("AI가 5가지 원칙에 따라 당신의 루틴을 분석했습니다. 각 항목의 강점과 개선점을 확인해보세요.")
+            
+            # 분석표 파싱
             table_data = []
             for line in analysis_table_str.strip().split('\n'):
                 parts = [p.strip() for p in line.split('|')]
                 if len(parts) == 3:
                     table_data.append(parts)
             
-            df = pd.DataFrame(table_data, columns=["평가 항목", "결과", "AI 코멘트"])
-            st.table(df)
+            # 각 항목을 순회하며 시각적 UI 생성
+            for item, rating, comment in table_data:
+                st.markdown(f"**{item}**")
+                
+                if "Y" in rating:
+                    st.success(f"✅ **{rating}:** {comment}", icon="✅")
+                elif "▲" in rating:
+                    st.warning(f"⚠️ **{rating}:** {comment}", icon="⚠️")
+                elif "N" in rating:
+                    st.error(f"❌ **{rating}:** {comment}", icon="❌")
+                st.divider()
 
         with tab2:
             st.subheader("🎯 한 줄 요약")
@@ -110,6 +123,7 @@ def display_results(result_text):
 
     except Exception as e:
         st.error("결과를 분석하는 중 오류가 발생했습니다. AI가 생성한 답변 형식이 다를 수 있습니다.")
+        st.code(f"오류 내용: {e}")
         st.text_area("AI 원본 답변:", result_text, height=300)
 
 # --- 5. 메인 UI 구성 ---
