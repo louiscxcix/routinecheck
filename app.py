@@ -4,8 +4,8 @@ import re
 
 # --- 1. 페이지 기본 설정 ---
 st.set_page_config(
-    page_title="AI 루틴 코치 v4.2",
-    page_icon="🎯",
+    page_title="AI 루틴 코치 v5.0",
+    page_icon="🏆",
     layout="wide",
 )
 
@@ -26,8 +26,8 @@ else:
     st.stop()
 
 
-# --- 3. AI 모델 호출 함수 (프롬프트 최종 수정) ---
-def generate_routine_analysis_v4_2(sport, routine_type, current_routine):
+# --- 3. AI 모델 호출 함수 ---
+def generate_routine_analysis_v5(sport, routine_type, current_routine):
     """안정성을 극대화한 'One-shot' 프롬프트로 AI 호출"""
     model = genai.GenerativeModel('gemini-1.5-flash')
     
@@ -89,81 +89,152 @@ def generate_routine_analysis_v4_2(sport, routine_type, current_routine):
         st.error(f"AI 호출 중 오류가 발생했습니다: {e}")
         return None
 
-# --- 4. 결과 파싱 및 UI 표시 함수 (안정성 최종 강화 버전) ---
-def display_results(result_text):
-    """AI 결과 텍스트를 새로운 구분자(delimiter) 기준으로 파싱하여 표시"""
+# --- 4. 결과 파싱 및 HTML 생성 함수 ---
+def format_results_to_html(result_text):
+    """AI 결과 텍스트를 파싱하여 이미지 저장이 가능한 단일 HTML 블록으로 생성"""
     try:
-        # 새로운 구분자를 기준으로 각 섹션의 내용을 추출
+        # 각 섹션 내용 추출
         analysis_table_str = re.search(r":::ANALYSIS_TABLE_START:::(.*?):::ANALYSIS_TABLE_END:::", result_text, re.DOTALL).group(1).strip()
         summary_full_str = re.search(r":::SUMMARY_START:::(.*?):::SUMMARY_END:::", result_text, re.DOTALL).group(1).strip()
         routine_v2_str = re.search(r":::ROUTINE_V2_START:::(.*?):::ROUTINE_V2_END:::", result_text, re.DOTALL).group(1).strip()
         
-        # 종합 분석 내용을 '한 줄 요약'과 '상세 설명'으로 분리
         summary_str = re.search(r"한 줄 요약:\s*(.*?)\n", summary_full_str).group(1).strip()
         explanation_str = re.search(r"상세 설명:\s*(.*)", summary_full_str, re.DOTALL).group(1).strip()
         
-        # 탭 UI 구성
-        tab1, tab2, tab3 = st.tabs(["📊 **루틴 분석표**", "📝 **종합 분석**", "💡 **루틴 v2.0 제안**"])
+        # HTML 컨텐츠 생성 시작
+        html = "<h3>📊 루틴 분석표</h3>"
+        table_data = [line.split('|') for line in analysis_table_str.strip().split('\n') if '|' in line]
+        
+        for item, rating, comment in table_data:
+            item, rating, comment = item.strip(), rating.strip(), comment.strip()
+            rating_class = ""
+            icon = ""
+            if "Y" in rating:
+                rating_class = "success"
+                icon = "✅"
+            elif "▲" in rating:
+                rating_class = "warning"
+                icon = "⚠️"
+            elif "N" in rating:
+                rating_class = "error"
+                icon = "❌"
+            html += f"""
+            <div class='analysis-item'>
+                <strong>{item}</strong>
+                <div class='alert {rating_class}'>{icon} <strong>{rating}:</strong> {comment}</div>
+            </div>
+            """
 
-        with tab1:
-            st.subheader("체크리스트")
-            table_data = [line.split('|') for line in analysis_table_str.strip().split('\n') if '|' in line]
-            
-            for item, rating, comment in table_data:
-                st.markdown(f"**{item.strip()}**")
-                rating = rating.strip()
-                comment = comment.strip()
-                
-                if "Y" in rating:
-                    st.success(f"✅ **{rating}:** {comment}", icon="✅")
-                elif "▲" in rating:
-                    st.warning(f"⚠️ **{rating}:** {comment}", icon="⚠️")
-                elif "N" in rating:
-                    st.error(f"❌ **{rating}:** {comment}", icon="❌")
-                st.divider()
-
-        with tab2:
-            st.subheader("🎯 한 줄 요약")
-            st.info(summary_str)
-            st.subheader("💬 상세 설명")
-            st.markdown(explanation_str)
-
-        with tab3:
-            st.subheader("🚀 당신을 위한 루틴 v2.0")
-            st.markdown(routine_v2_str)
+        html += f"""
+        <hr>
+        <h3>📝 종합 분석</h3>
+        <div class='summary-box'>
+            <strong>🎯 한 줄 요약</strong>
+            <p>{summary_str}</p>
+        </div>
+        <div class='explanation-box'>
+            <strong>💬 상세 설명</strong>
+            <p>{explanation_str.replace('\\n', '<br>')}</p>
+        </div>
+        <hr>
+        <h3>💡 루틴 v2.0 제안</h3>
+        <div class='routine-box'>
+            {routine_v2_str.replace('**', '<strong>').replace('**', '</strong>').replace('\\n', '<br>')}
+        </div>
+        """
+        return html
 
     except (AttributeError, IndexError):
-        st.error("AI의 답변 형식이 예상과 달라 자동으로 분석할 수 없습니다. 아래 원본 답변을 확인해주세요.")
-        st.text_area("AI 원본 답변:", result_text, height=400)
-    except Exception as e:
-        st.error(f"결과를 표시하는 중 예상치 못한 오류가 발생했습니다: {e}")
-
+        return f"<div class='alert error'>AI의 답변 형식이 예상과 달라 자동으로 분석할 수 없습니다.</div><pre>{result_text}</pre>"
 
 # --- 5. 메인 UI 구성 ---
-st.title("🎯 AI 루틴 코치 v4.2 (안정성 최종 강화)")
-st.write("Y/N 분석의 명확함과 심층 분석의 깊이를 모두 담았습니다. 당신의 루틴을 객관적으로 점검하고 확실한 개선안을 받아보세요.")
+st.title("🏆 AI 루틴 코치 v5.0")
+st.write("하나의 결과창, 이미지 저장, 모바일 최적화로 더 편리해졌습니다. 당신의 루틴을 점검하고 확실한 개선안을 받아보세요.")
 st.divider()
 
-with st.form("routine_form_v4_2"):
+# --- 입력창 (세로 1단 구성) ---
+with st.form("routine_form_v5"):
     st.header("Step 1: 당신의 루틴 알려주기")
-    col1, col2 = st.columns(2)
-    with col1:
-        sport = st.selectbox('**1. 종목**', ('탁구', '축구', '농구', '야구', '골프', '테니스', '양궁', '기타'))
-        routine_type = st.text_input('**2. 루틴 종류**', placeholder='예: 서브, 자유투, 타석')
-    with col2:
-        current_routine = st.text_area('**3. 현재 루틴 상세 내용**', placeholder='예: 공을 세 번 튀기고, 심호흡 한 번 하고 바로 슛을 쏩니다.', height=140)
+    
+    sport = st.selectbox('**1. 종목**', ('탁구', '축구', '농구', '야구', '골프', '테니스', '양궁', '기타'))
+    routine_type = st.text_input('**2. 루틴 종류**', placeholder='예: 서브, 자유투, 타석')
+    current_routine = st.text_area('**3. 현재 루틴 상세 내용**', placeholder='예: 공을 세 번 튀기고, 심호흡 한 번 하고 바로 슛을 쏩니다.', height=140)
     
     submitted = st.form_submit_button("AI 정밀 분석 시작하기", type="primary", use_container_width=True)
 
+# --- 결과창 (통합 구성 및 이미지 저장) ---
 if submitted:
     if not all([sport, routine_type, current_routine]):
         st.error("모든 항목을 정확하게 입력해주세요.")
     else:
         with st.spinner('AI 코치가 당신의 루틴을 정밀 분석하고 있습니다...'):
-            analysis_result = generate_routine_analysis_v4_2(sport, routine_type, current_routine)
-            st.session_state.analysis_result_v4_2 = analysis_result
+            analysis_result = generate_routine_analysis_v5(sport, routine_type, current_routine)
+            st.session_state.analysis_result_v5 = analysis_result
 
-if 'analysis_result_v4_2' in st.session_state and st.session_state.analysis_result_v4_2:
+if 'analysis_result_v5' in st.session_state and st.session_state.analysis_result_v5:
     st.divider()
     st.header("Step 2: AI 코칭 결과 확인하기")
-    display_results(st.session_state.analysis_result_v4_2)
+    
+    result_html = format_results_to_html(st.session_state.analysis_result_v5)
+
+    # HTML과 자바스크립트를 포함한 최종 결과 컴포넌트
+    html_with_button = f"""
+    <div id="capture-area">
+        {result_html}
+    </div>
+    
+    <button id="save-btn">분석 결과 이미지로 저장 📸</button>
+
+    <style>
+        #capture-area {{
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif, "Apple Color Emoji", "Segoe UI Emoji";
+            padding: 20px;
+            border: 1px solid #ddd;
+            border-radius: 10px;
+            background-color: #ffffff; /* 캡처 시 배경색 지정 */
+        }}
+        h3 {{ margin-top: 20px; border-bottom: 2px solid #ddd; padding-bottom: 5px;}}
+        .analysis-item {{ margin-bottom: 15px; }}
+        .alert {{
+            padding: 10px;
+            border-radius: 5px;
+            margin-top: 5px;
+        }}
+        .alert.success {{ background-color: #d4edda; color: #155724; border: 1px solid #c3e6cb; }}
+        .alert.warning {{ background-color: #fff3cd; color: #856404; border: 1px solid #ffeeba; }}
+        .alert.error {{ background-color: #f8d7da; color: #721c24; border: 1px solid #f5c6cb; }}
+        .summary-box, .explanation-box, .routine-box {{ margin-top: 10px; padding: 15px; border-radius: 5px; }}
+        .summary-box {{ background-color: #e2e3e5; }}
+        .explanation-box, .routine-box {{ background-color: #f8f9fa; }}
+        #save-btn {{
+            display: block;
+            width: 100%;
+            margin-top: 20px;
+            padding: 15px;
+            font-size: 18px;
+            font-weight: bold;
+            color: white;
+            background-color: #007bff;
+            border: none;
+            border-radius: 10px;
+            cursor: pointer;
+        }}
+        #save-btn:hover {{ background-color: #0056b3; }}
+    </style>
+    
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+    <script>
+    document.getElementById("save-btn").onclick = function() {{
+        const captureElement = document.getElementById("capture-area");
+        html2canvas(captureElement, {{ scale: 2, backgroundColor: '#ffffff' }}).then(canvas => {{
+            const image = canvas.toDataURL("image/png");
+            const link = document.createElement("a");
+            link.href = image;
+            link.download = "ai-routine-analysis.png";
+            link.click();
+        }});
+    }}
+    </script>
+    """
+    
+    st.components.v1.html(html_with_button, height=800, scrolling=True)
