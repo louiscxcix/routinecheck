@@ -1,21 +1,18 @@
 import streamlit as st
 import google.generativeai as genai
 import re
-import pandas as pd
 
 # --- 1. 페이지 기본 설정 ---
 st.set_page_config(
-    page_title="AI 루틴 코치 v4.0",
+    page_title="AI 루틴 코치 v4.1",
     page_icon="🎯",
     layout="wide",
 )
 
 # --- 2. API 키 설정 ---
 try:
-    # Streamlit 클라우드 배포 시 st.secrets에서 키를 로드합니다.
     api_key = st.secrets["GEMINI_API_KEY"]
 except (KeyError, FileNotFoundError):
-    # 로컬 환경 테스트를 위해 사이드바에서 키를 입력받습니다.
     st.sidebar.warning("API 키를 찾을 수 없습니다.")
     api_key = st.sidebar.text_input(
         "여기에 Google AI API 키를 입력하세요.", type="password",
@@ -75,34 +72,46 @@ def generate_routine_analysis_v4(sport, routine_type, current_routine):
         st.error(f"AI 호출 중 오류가 발생했습니다: {e}")
         return None
 
-# --- 4. 결과 파싱 및 UI 표시 함수 (UI 개선 버전) ---
+# --- 4. 결과 파싱 및 UI 표시 함수 (오류 수정 버전) ---
 def display_results(result_text):
-    """AI 결과 텍스트를 파싱하여 직관적인 UI로 표시"""
-    try:
-        # 섹션별로 텍스트 분리 (정규식 강화)
-        analysis_table_str = re.search(r"1\. 루틴 분석표\s*\n(.*?)(?=\n\n2\.|\Z)", result_text, re.DOTALL).group(1)
-        summary_str = re.search(r"한 줄 요약:\s*(.*?)\n", result_text).group(1)
-        explanation_str = re.search(r"상세 설명:\s*(.*?)(?=\n\n3\.|\Z)", result_text, re.DOTALL).group(1)
-        routine_v2_str = re.search(r"3\. 루틴 v2\.0 제안\s*\n(.*?)$", result_text, re.DOTALL).group(1)
+    """AI 결과 텍스트를 파싱하여 직관적인 UI로 표시 (안정성 강화)"""
+    # 각 섹션의 패턴을 찾습니다.
+    match_table = re.search(r"1\. 루틴 분석표\s*\n(.*?)(?=\n\n2\.|\Z)", result_text, re.DOTALL)
+    match_summary = re.search(r"한 줄 요약:\s*(.*?)\n", result_text)
+    match_explanation = re.search(r"상세 설명:\s*(.*?)(?=\n\n3\.|\Z)", result_text, re.DOTALL)
+    match_routine = re.search(r"3\. 루틴 v2\.0 제안\s*\n(.*?)$", result_text, re.DOTALL)
 
-        # 탭 UI 구성
-        tab1, tab2, tab3 = st.tabs(["📊 **루틴 분석표**", "📝 **종합 분석**", "💡 **루틴 v2.0 제안**"])
+    # 모든 패턴이 성공적으로 찾아졌는지 확인합니다.
+    if not (match_table and match_summary and match_explanation and match_routine):
+        st.error("AI의 답변 형식이 예상과 달라 자동으로 분석할 수 없습니다. 아래 원본 답변을 확인해주세요.")
+        st.text_area("AI 원본 답변:", result_text, height=400)
+        return
 
-        with tab1:
-            st.subheader("체크리스트")
-            st.write("AI가 5가지 원칙에 따라 당신의 루틴을 분석했습니다. 각 항목의 강점과 개선점을 확인해보세요.")
-            
-            # 분석표 파싱
-            table_data = []
-            for line in analysis_table_str.strip().split('\n'):
-                parts = [p.strip() for p in line.split('|')]
-                if len(parts) == 3:
-                    table_data.append(parts)
-            
-            # 각 항목을 순회하며 시각적 UI 생성
+    # 패턴을 성공적으로 찾은 경우에만 .group()을 호출하여 내용을 추출합니다.
+    analysis_table_str = match_table.group(1).strip()
+    summary_str = match_summary.group(1).strip()
+    explanation_str = match_explanation.group(1).strip()
+    routine_v2_str = match_routine.group(1).strip()
+    
+    # 탭 UI 구성
+    tab1, tab2, tab3 = st.tabs(["📊 **루틴 분석표**", "📝 **종합 분석**", "💡 **루틴 v2.0 제안**"])
+
+    with tab1:
+        st.subheader("체크리스트")
+        st.write("AI가 5가지 원칙에 따라 당신의 루틴을 분석했습니다. 각 항목의 강점과 개선점을 확인해보세요.")
+        
+        table_data = []
+        for line in analysis_table_str.split('\n'):
+            parts = [p.strip() for p in line.split('|')]
+            if len(parts) == 3:
+                table_data.append(parts)
+        
+        if not table_data:
+            st.warning("분석표 데이터를 인식할 수 없습니다.")
+            st.text(analysis_table_str)
+        else:
             for item, rating, comment in table_data:
                 st.markdown(f"**{item}**")
-                
                 if "Y" in rating:
                     st.success(f"✅ **{rating}:** {comment}", icon="✅")
                 elif "▲" in rating:
@@ -111,23 +120,18 @@ def display_results(result_text):
                     st.error(f"❌ **{rating}:** {comment}", icon="❌")
                 st.divider()
 
-        with tab2:
-            st.subheader("🎯 한 줄 요약")
-            st.info(summary_str)
-            st.subheader("💬 상세 설명")
-            st.markdown(explanation_str)
+    with tab2:
+        st.subheader("🎯 한 줄 요약")
+        st.info(summary_str)
+        st.subheader("💬 상세 설명")
+        st.markdown(explanation_str)
 
-        with tab3:
-            st.subheader("🚀 당신을 위한 루틴 v2.0")
-            st.markdown(routine_v2_str)
-
-    except Exception as e:
-        st.error("결과를 분석하는 중 오류가 발생했습니다. AI가 생성한 답변 형식이 다를 수 있습니다.")
-        st.code(f"오류 내용: {e}")
-        st.text_area("AI 원본 답변:", result_text, height=300)
+    with tab3:
+        st.subheader("🚀 당신을 위한 루틴 v2.0")
+        st.markdown(routine_v2_str)
 
 # --- 5. 메인 UI 구성 ---
-st.title("🎯 AI 루틴 코치 v4.0")
+st.title("🎯 AI 루틴 코치 v4.1 (안정성 개선)")
 st.write("Y/N 분석의 명확함과 심층 분석의 깊이를 모두 담았습니다. 당신의 루틴을 객관적으로 점검하고 확실한 개선안을 받아보세요.")
 st.divider()
 
