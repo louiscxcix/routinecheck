@@ -9,9 +9,7 @@ st.set_page_config(
     layout="centered",
 )
 
-# 모바일 뷰포트 설정을 위한 메타 태그 추가
 st.markdown('<meta name="viewport" content="width=device-width, initial-scale=1.0">', unsafe_allow_html=True)
-
 
 # --- 2. API 키 설정 ---
 try:
@@ -30,16 +28,16 @@ else:
     st.stop()
 
 
-# --- 3. 커스텀 CSS (모바일 반응형 미디어 쿼리 추가) ---
+# --- 3. 커스텀 CSS (버튼 색상 수정) ---
 def load_css():
     st.markdown("""
         <style>
             /* --- 기본 배경 및 폰트 --- */
             .stApp {
-                background-color: #F9F8FB;
+                background-color: #F1F2F5;
             }
             .main .block-container {
-                padding: 2rem 1.5rem; /* 기본 여백 */
+                padding: 2rem 1.5rem;
             }
 
             /* --- 헤더 --- */
@@ -62,24 +60,43 @@ def load_css():
                 line-height: 28px; margin-bottom: 12px;
             }
             .stTextInput > div > div > input,
-            .stTextArea > div > div > textarea,
-            .stSelectbox > div > div {
+            .stTextArea > div > div > textarea {
                 background-color: #FFFFFF; border: 1px solid #F1F1F1;
                 border-radius: 12px; box-shadow: none; color: #0D1628;
             }
-            .stSelectbox > div[data-baseweb="select"] > div { padding: 6px 0; }
+            .stSelectbox > div[data-baseweb="select"] > div {
+                background-color: #FFFFFF;
+                border: 1px solid #F1F1F1;
+                border-radius: 12px;
+                box-shadow: none;
+                color: #0D1628;
+                height: 48px;
+                display: flex;
+                align-items: center;
+            }
+            
+            /* --- 버튼 --- */
             .stButton > button {
-                width: 100%; background: #2BA7D1; color: white; border-radius: 12px;
-                padding: 14px 0; font-size: 16px; font-weight: bold; border: none;
+                width: 100%;
+                background: #2BA7D1; /* <<<<<<< 버튼 색상 수정 */
+                color: white;
+                border-radius: 12px;
+                padding: 14px 0;
+                font-size: 16px;
+                font-weight: bold;
+                border: none;
                 box-shadow: 0px 5px 10px rgba(26, 26, 26, 0.10);
             }
-            .stButton > button:hover { background: #2490b3; color: white; }
+            .stButton > button:hover {
+                background: #2490b3; /* <<<<<<< 버튼 호버 색상 */
+                color: white;
+            }
             
             /* --- 결과창 --- */
             #capture-area {
                 font-family: 'Helvetica', sans-serif;
                 padding: 24px; border-radius: 16px; background-color: #ffffff;
-                border: 1px solid #F1F1F1;
+                border: 1px solid #EAEBF0;
             }
             .result-header {
                 color: #0D1628; font-size: 18px; font-weight: 700;
@@ -98,19 +115,19 @@ def load_css():
             .routine-box ul { padding-left: 20px; }
             .routine-box li { margin-bottom: 8px; }
 
-            /* --- 📱 모바일 반응형 CSS --- */
+            /* --- 모바일 반응형 CSS --- */
             @media (max-width: 480px) {
                 .main .block-container {
-                    padding: 1rem; /* 모바일에서 좌우 여백 줄이기 */
+                    padding: 1rem;
                 }
                 .title {
-                    font-size: 22px; /* 모바일에서 타이틀 크기 조정 */
+                    font-size: 22px;
                 }
                 .input-label {
-                    font-size: 17px; /* 모바일에서 입력 라벨 크기 조정 */
+                    font-size: 17px;
                 }
                 #capture-area {
-                    padding: 16px; /* 모바일에서 결과창 내부 여백 줄이기 */
+                    padding: 16px;
                 }
             }
         </style>
@@ -234,25 +251,27 @@ if 'analysis_result_v6' in st.session_state and st.session_state.analysis_result
     <style>
         #save-btn {{
             display: block; width: 100%; padding: 14px; font-size: 16px; font-weight: bold;
-            color: white; background-color: #2BA7D1; border: none; border-radius: 12px; cursor: pointer;
+            color: white;
+            background-color: #2BA7D1; /* <<<<<<< 버튼 색상 수정 */
+            border: none;
+            border-radius: 12px;
+            cursor: pointer;
             box-shadow: 0px 5px 10px rgba(26, 26, 26, 0.10);
         }}
-        #save-btn:hover {{ background-color: #2490b3; }}
+        #save-btn:hover {{
+            background-color: #2490b3; /* <<<<<<< 버튼 호버 색상 */
+        }}
     </style>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
     <script>
     document.getElementById("save-btn").onclick = function() {{
         const captureElement = document.getElementById("capture-area");
-        // Wait for images to load before capturing, useful if icons are external
-        window.scrollTo(0, 0); // Scroll to top to ensure the full element is in view
+        window.scrollTo(0, 0);
         setTimeout(() => {{
             html2canvas(captureElement, {{
                 scale: 2,
                 backgroundColor: '#ffffff',
                 useCORS: true,
-                onclone: (document) => {{
-                    // You can modify the cloned document here if needed before capture
-                }}
             }}).then(canvas => {{
                 const image = canvas.toDataURL("image/png");
                 const link = document.createElement("a");
@@ -260,7 +279,7 @@ if 'analysis_result_v6' in st.session_state and st.session_state.analysis_result
                 link.download = "ai-routine-analysis.png";
                 link.click();
             }});
-        }}, 200); // A small delay to ensure rendering
+        }}, 200);
     }}
     </script>
     """
