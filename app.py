@@ -28,7 +28,7 @@ else:
     st.stop()
 
 
-# --- 3. 커스텀 CSS (버튼 스타일 통합) ---
+# --- 3. 커스텀 CSS ---
 def load_css():
     st.markdown("""
         <style>
@@ -36,21 +36,15 @@ def load_css():
                 background-color: #F1F2F5;
                 font-family: 'Helvetica', sans-serif;
             }
-            .main .block-container {
-                padding: 2rem 1.5rem;
-            }
+            .main .block-container { padding: 2rem 1.5rem; }
             .header-icon {
                 background-color: rgba(43, 167, 209, 0.1);
                 border-radius: 50%; width: 52px; height: 52px;
                 display: flex; align-items: center; justify-content: center;
                 font-size: 28px; margin-bottom: 12px;
             }
-            .title {
-                color: #0D1628; font-size: 24px; font-weight: 700; line-height: 32px; padding: 0;
-            }
-            .subtitle {
-                color: #86929A; font-size: 14px; line-height: 20px; margin-bottom: 30px;
-            }
+            .title { color: #0D1628; font-size: 24px; font-weight: 700; line-height: 32px; padding: 0; }
+            .subtitle { color: #86929A; font-size: 14px; line-height: 20px; margin-bottom: 30px; }
             .input-label {
                 color: #0D1628; font-size: 18px; font-weight: 700;
                 line-height: 28px; margin-bottom: 12px;
@@ -62,62 +56,30 @@ def load_css():
                 border-radius: 12px; box-shadow: none; color: #0D1628;
                 height: 48px; display: flex; align-items: center;
             }
-            .stTextArea > div > div > textarea {
-                height: 140px;
+            .stTextArea > div > div > textarea { height: 140px; }
+            
+            /* <<<<<<< 숨겨진 Streamlit 버튼을 위한 CSS */
+            div[data-testid="stForm"] > form > div.st-emotion-cache-1uj9n1c > button {
+                display: none;
             }
             
-            /* <<<<<<< 두 버튼 스타일을 하나로 통합 --- */
-            .stButton > button, #save-btn {
-                width: 100%;
-                background: #2BA7D1 !important;
-                color: white !important;
-                border-radius: 12px;
-                padding: 14px 0;
-                font-size: 16px;
-                font-weight: bold;
-                border: none !important;
-                box-shadow: 0px 5px 10px rgba(26, 26, 26, 0.10);
-                cursor: pointer;
-            }
-            .stButton > button:hover, #save-btn:hover {
-                background: #2490b3 !important;
-                color: white !important;
-            }
-            
-            /* --- 결과창 --- */
+            #capture-area { border-radius: 16px; background-color: #F1F2F5; }
             .result-card {
                 background-color: #ffffff; padding: 24px; border-radius: 16px;
-                border: 1px solid #EAEBF0;
+                border: 1px solid #EAEBF0; margin-bottom: 16px;
             }
             .result-header {
-                color: #0D1628; font-size: 20px; font-weight: 700;
+                color: #0D1628; font-size: 22px; font-weight: 700;
+                padding-bottom: 12px; margin-bottom: 16px; border-bottom: 1px solid #F1F1F1;
             }
-            .clean-divider {
-                border: none; height: 1px;
-                background-color: #F1F1F1; margin: 24px 0;
-            }
-            .analysis-item { margin-bottom: 16px; }
-            .analysis-item .item-title {
-                color: #0D1628; font-size: 16px; font-weight: 700;
-            }
-            .alert {
-                padding: 12px; border-radius: 8px; margin-top: 8px; font-size: 14px;
-            }
+            .analysis-item .item-title { color: #0D1628; font-size: 16px; font-weight: 700; }
+            .alert { padding: 12px; border-radius: 8px; margin-top: 8px; font-size: 15px; }
             .alert.success { background-color: #d4edda; color: #155724; }
             .alert.warning { background-color: #fff3cd; color: #856404; }
             .alert.error { background-color: #f8d7da; color: #721c24; }
-            
-            .item-title {
-                color: #0D1628; font-weight: 700; font-size: 16px;
-            }
-            .summary-box, .explanation-box, .routine-box { margin-top: 10px; }
-            .summary-box { background-color: #F1F5F9; padding: 16px; border-radius: 8px;}
             .summary-box p, .explanation-box p, .routine-box {
-                color: #5A6472; font-size: 14px; line-height: 1.6; padding-top: 8px;
+                color: #5A6472; font-size: 15px; line-height: 1.6; padding-top: 8px;
             }
-            .routine-box ul { padding-left: 20px; }
-            .routine-box li { margin-bottom: 8px; }
-
             @media (max-width: 480px) {
                 .main .block-container { padding: 1rem; }
                 .title { font-size: 22px; }
@@ -182,7 +144,7 @@ def format_results_to_html(result_text):
         summary_str = re.search(r"한 줄 요약:\s*(.*?)\n", summary_full_str).group(1).strip()
         explanation_str = re.search(r"상세 설명:\s*(.*)", summary_full_str, re.DOTALL).group(1).strip()
         
-        html_content = "<div><div class='result-header'>📊 루틴 분석표</div>"
+        html = "<div class='result-card'><div class='result-header'>📊 루틴 분석표</div>"
         table_data = [line.split('|') for line in analysis_table_str.strip().split('\n') if '|' in line]
         for item, rating, comment in table_data:
             item, rating, comment = item.strip(), rating.strip(), comment.strip()
@@ -190,28 +152,25 @@ def format_results_to_html(result_text):
             if "Y" in rating: rating_class, icon = "success", "✅"
             elif "▲" in rating: rating_class, icon = "warning", "⚠️"
             elif "N" in rating: rating_class, icon = "error", "❌"
-            html_content += f"<div class='analysis-item'><div class='item-title'>{item}</div><div class='alert {rating_class}'>{icon} <strong>{rating}:</strong> {comment}</div></div>"
-        
+            html += f"<div class='analysis-item'><div class='item-title'>{item}</div><div class='alert {rating_class}'>{icon} <strong>{rating}:</strong> {comment}</div></div>"
+        html += "</div>"
+
         explanation_html = explanation_str.replace("\n", "<br>").replace("**", "<strong>").replace("**", "</strong>")
         routine_v2_html = "<ul>" + "".join(f"<li>{line.strip()[2:]}</li>" for line in routine_v2_str.split('\n') if line.strip().startswith('- ')) + "</ul>"
         routine_v2_html = routine_v2_html.replace("**", "<strong>").replace("**", "</strong>")
 
-        html_content += f"""
-        </div>
-        <hr class='clean-divider'>
-        <div>
+        html += f"""
+        <div class='result-card'>
             <div class='result-header'>📝 종합 분석</div>
             <div class='summary-box'><div class='item-title'>🎯 한 줄 요약</div><p>{summary_str}</p></div>
             <div class='explanation-box' style='margin-top: 12px;'><div class='item-title'>💬 상세 설명</div><p>{explanation_html}</p></div>
         </div>
-        <hr class='clean-divider'>
-        <div>
+        <div class='result-card'>
             <div class='result-header'>💡 루틴 v2.0 제안</div>
             <div class='routine-box'>{routine_v2_html}</div>
         </div>
         """
-        return f"<div class='result-card'>{html_content}</div>"
-        
+        return html
     except (AttributeError, IndexError):
         return f"<div class='result-card'><div class='alert error'>AI의 답변 형식이 예상과 달라 자동으로 분석할 수 없습니다.</div><pre>{result_text}</pre></div>"
 
@@ -220,7 +179,7 @@ st.markdown('<div class="header-icon">✍️</div>', unsafe_allow_html=True)
 st.markdown('<p class="title">AI 루틴 분석</p>', unsafe_allow_html=True)
 st.markdown('<p class="subtitle">승부의 순간, 마음을 다잡는 루틴의 힘<br/>AI 루틴 코치가 도와 드립니다</p>', unsafe_allow_html=True)
 
-with st.form("routine_form_v6"):
+with st.form("routine_form_final"):
     st.markdown('<p class="input-label">어떤 종목의 선수이신가요?</p>', unsafe_allow_html=True)
     sport = st.selectbox('Sport', ('탁구', '축구', '농구', '야구', '골프', '테니스', '양궁', '기타'), label_visibility="collapsed")
     
@@ -230,8 +189,39 @@ with st.form("routine_form_v6"):
     st.markdown('<p class="input-label">현재 루틴 상세 내용</p>', unsafe_allow_html=True)
     current_routine = st.text_area('Current Routine', placeholder='공을 세번 튀기고, 심호흡을 깊게 한번 하고 바로 슛을 쏩니다', height=140, label_visibility="collapsed")
     
-    st.write("")
-    submitted = st.form_submit_button("AI 정밀 분석 시작하기")
+    # 실제 제출 기능을 하는 Streamlit 버튼 (CSS로 숨겨짐)
+    submitted = st.form_submit_button("Submit")
+
+# 사용자가 실제로 클릭하는 커스텀 HTML 버튼
+st.markdown("""
+    <div id="custom-submit-button" style="
+        padding: 16px 0;
+        background: #2BA7D1;
+        box-shadow: 0px 5px 10px rgba(26, 26, 26, 0.10);
+        border-radius: 12px;
+        justify-content: center;
+        align-items: center;
+        gap: 8px;
+        display: flex;
+        cursor: pointer;
+        width: 100%;
+    ">
+        <div style="text-align: center; color: white; font-size: 16px; font-family: Helvetica; font-weight: bold; line-height: 20px;">
+            AI 정밀 분석 시작하기
+        </div>
+    </div>
+
+    <script>
+        const customButton = document.getElementById("custom-submit-button");
+        const streamlitButton = window.parent.document.querySelector('div[data-testid="stForm"] button[type="submit"]');
+
+        if (customButton && streamlitButton) {
+            customButton.onclick = function() {
+                streamlitButton.click();
+            }
+        }
+    </script>
+""", unsafe_allow_html=True)
 
 if submitted:
     if not all([sport, routine_type, current_routine]):
@@ -246,12 +236,21 @@ if 'analysis_result' in st.session_state and st.session_state.analysis_result:
     
     result_html = format_results_to_html(st.session_state.analysis_result)
     
-    # CSS를 본문에서 분리하고, 버튼만 컴포넌트에 남김
     html_with_button = f"""
     <div id="capture-area">{result_html}</div>
     <div style="margin-top: 20px;">
         <button id="save-btn">분석 결과 이미지로 저장 📸</button>
     </div>
+    <style>
+        #save-btn {{
+            width: 100% !important; background: #2BA7D1 !important; color: white !important;
+            border-radius: 12px !important; padding: 16px 0 !important; font-size: 16px !important;
+            font-weight: bold !important; border: none !important;
+            box-shadow: 0px 5px 10px rgba(26, 26, 26, 0.10) !important;
+            cursor: pointer !important; text-align: center !important;
+        }}
+        #save-btn:hover {{ background: #2490b3 !important; color: white !important; }}
+    </style>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
     <script>
     document.getElementById("save-btn").onclick = function() {{
