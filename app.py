@@ -28,7 +28,7 @@ else:
     st.stop()
 
 
-# --- 3. 커스텀 CSS (버튼 색상 수정) ---
+# --- 3. 커스텀 CSS (버튼 색상 !important 적용) ---
 def load_css():
     st.markdown("""
         <style>
@@ -78,25 +78,32 @@ def load_css():
             /* --- 버튼 --- */
             .stButton > button {
                 width: 100%;
-                background: #2BA7D1; /* <<<<<<< 버튼 색상 수정 */
-                color: white;
+                background: #2BA7D1 !important; /* <<<<<<< 버튼 색상 강제 적용 */
+                color: white !important;
                 border-radius: 12px;
                 padding: 14px 0;
                 font-size: 16px;
                 font-weight: bold;
-                border: none;
+                border: none !important;
                 box-shadow: 0px 5px 10px rgba(26, 26, 26, 0.10);
             }
             .stButton > button:hover {
-                background: #2490b3; /* <<<<<<< 버튼 호버 색상 */
-                color: white;
+                background: #2490b3 !important; /* <<<<<<< 버튼 호버 색상 강제 적용 */
+                color: white !important;
             }
             
             /* --- 결과창 --- */
             #capture-area {
                 font-family: 'Helvetica', sans-serif;
-                padding: 24px; border-radius: 16px; background-color: #ffffff;
+                border-radius: 16px; 
+                background-color: #F1F2F5;
+            }
+            .result-section {
+                background-color: #ffffff;
+                padding: 24px;
+                border-radius: 16px;
                 border: 1px solid #EAEBF0;
+                margin-bottom: 16px;
             }
             .result-header {
                 color: #0D1628; font-size: 18px; font-weight: 700;
@@ -117,18 +124,10 @@ def load_css():
 
             /* --- 모바일 반응형 CSS --- */
             @media (max-width: 480px) {
-                .main .block-container {
-                    padding: 1rem;
-                }
-                .title {
-                    font-size: 22px;
-                }
-                .input-label {
-                    font-size: 17px;
-                }
-                #capture-area {
-                    padding: 16px;
-                }
+                .main .block-container { padding: 1rem; }
+                .title { font-size: 22px; }
+                .input-label { font-size: 17px; }
+                .result-section { padding: 16px; }
             }
         </style>
     """, unsafe_allow_html=True)
@@ -143,9 +142,10 @@ def generate_routine_analysis(sport, routine_type, current_routine):
     당신은 세계 최고의 선수들을 지도하는 스포츠 심리학자이자 멘탈 코치입니다.
     ### 과업 ###
     **매우 중요: 당신의 답변은 프로그램에 의해 자동으로 분석되므로, 반드시 아래 [출력 형식 예시]에 명시된 출력 형식과 구분자를 정확히 지켜야 합니다.**
+    **분석 내용은 불필요한 설명을 제외하고, 핵심 위주로 간결하게 작성해주세요. 전체적인 길이를 기존보다 약 20% 짧게 요약합니다.**
     아래 선수 정보를 바탕으로, 다음 세 가지 내용을 **지정된 구분자(delimiter)를 사용하여** 생성하세요.
     **1. 루틴 분석표:** `원칙 항목 | 평가 (Y/N/▲) | 한 줄 이유` 형태로 5줄 생성
-    **2. 종합 분석:** '한 줄 요약'과 '상세 설명' 포함
+    **2. 종합 분석:** '한 줄 요약'과 '상세 설명' (3~4 문장으로 요약) 포함
     **3. 루틴 v2.0 제안:** 구체적인 실행 방안 제시. 목록에는 Markdown의 `-`를 사용하세요.
     ---
     **[출력 형식 예시]**
@@ -158,13 +158,13 @@ def generate_routine_analysis(sport, routine_type, current_routine):
     :::ANALYSIS_TABLE_END:::
     :::SUMMARY_START:::
     **한 줄 요약:** 긍정적 자기암시라는 좋은 인지적 기반을 가지고 있으나, 이를 뒷받침할 일관된 행동 루틴과 에너지 조절 전략이 시급합니다.
-    **상세 설명:** 현재 루틴은 '마음'만 앞서고 '몸'의 준비가 부족한 상태입니다. 인지적 루틴은 훌륭하지만, 신체적 긴장도를 조절하고 일관된 동작을 만들어주는 행동 루틴이 없다면 압박 상황에서 실수가 나올 확률이 높습니다. 행동 루틴을 추가하여 마음과 몸의 상태를 일치시키는 것이 중요합니다.
+    **상세 설명:** 현재 루틴은 '마음'의 준비는 되어있으나 '몸'의 준비가 부족한 상태입니다. 신체적 긴장도를 조절하고 일관된 동작을 만들어주는 행동 루틴이 없다면 압박 상황에서 실수가 나올 확률이 높습니다. 행동 루틴을 추가하여 마음과 몸의 상태를 일치시키는 것이 중요합니다.
     :::SUMMARY_END:::
     :::ROUTINE_V2_START:::
-    - **심호흡 및 준비 (에너지 컨트롤):** 테이블 뒤로 한 걸음 물러나 코로 3초간 숨을 들이마시고, 입으로 5초간 길게 내뱉습니다. 이 과정을 통해 심박수를 안정시키고 시야를 넓힙니다.
-    - **동작 루틴 (일관성):** 정해진 위치에서 공을 정확히 **두 번만** 튀깁니다. 라켓을 한 바퀴 돌리며 그립을 다시 잡습니다. 이는 불필요한 생각을 차단하는 '앵커' 역할을 합니다.
-    - **인지 루틴 (자기암시):** (기존의 장점 유지) 속으로 준비된 자기암시("나는 준비되었다. 자신있게 하자.")를 외칩니다.
-    - **실행 및 세리머니 (자기 칭찬):** 서브를 넣고, 성공 시 가볍게 주먹을 쥐며 "좋았어!"라고 인정해줍니다. 이는 성공 경험을 뇌에 각인시키는 중요한 과정입니다.
+    - **심호흡 및 준비 (에너지 컨트롤):** 테이블 뒤로 물러나 코로 3초간 숨을 들이마시고, 입으로 5초간 길게 내뱉어 심박수를 안정시킵니다.
+    - **동작 루틴 (일관성):** 정해진 위치에서 공을 정확히 **두 번만** 튀깁니다. 이는 불필요한 생각을 차단하는 '앵커' 역할을 합니다.
+    - **인지 루틴 (자기암시):** (기존의 장점 유지) 속으로 준비된 자기암시("나는 준비되었다")를 외칩니다.
+    - **실행 및 세리머니 (자기 칭찬):** 성공 시 가볍게 주먹을 쥐며 "좋았어!"라고 인정해 성공 경험을 뇌에 각인시킵니다.
     :::ROUTINE_V2_END:::
     ---
     ### 선수 정보 ###
@@ -187,7 +187,7 @@ def format_results_to_html(result_text):
         summary_str = re.search(r"한 줄 요약:\s*(.*?)\n", summary_full_str).group(1).strip()
         explanation_str = re.search(r"상세 설명:\s*(.*)", summary_full_str, re.DOTALL).group(1).strip()
         
-        html = "<div class='result-header'>📊 루틴 분석표</div>"
+        html = "<div class='result-section'><div class='result-header'>📊 루틴 분석표</div>"
         table_data = [line.split('|') for line in analysis_table_str.strip().split('\n') if '|' in line]
         for item, rating, comment in table_data:
             item, rating, comment = item.strip(), rating.strip(), comment.strip()
@@ -196,21 +196,26 @@ def format_results_to_html(result_text):
             elif "▲" in rating: rating_class, icon = "warning", "⚠️"
             elif "N" in rating: rating_class, icon = "error", "❌"
             html += f"<div class='analysis-item'><strong>{item}</strong><div class='alert {rating_class}'>{icon} <strong>{rating}:</strong> {comment}</div></div>"
+        html += "</div>"
 
         explanation_html = explanation_str.replace("\n", "<br>").replace("**", "<strong>").replace("**", "</strong>")
         routine_v2_html = "<ul>" + "".join(f"<li>{line.strip()[2:]}</li>" for line in routine_v2_str.split('\n') if line.strip().startswith('- ')) + "</ul>"
         routine_v2_html = routine_v2_html.replace("**", "<strong>").replace("**", "</strong>")
 
         html += f"""
-        <div class='result-header' style='margin-top: 30px;'>📝 종합 분석</div>
-        <div class='summary-box'><strong>🎯 한 줄 요약</strong><p>{summary_str}</p></div>
-        <div class='explanation-box' style='margin-top: 12px;'><strong>💬 상세 설명</strong><p>{explanation_html}</p></div>
-        <div class='result-header' style='margin-top: 30px;'>💡 루틴 v2.0 제안</div>
-        <div class='routine-box'>{routine_v2_html}</div>
+        <div class='result-section'>
+            <div class='result-header'>📝 종합 분석</div>
+            <div class='summary-box'><strong>🎯 한 줄 요약</strong><p>{summary_str}</p></div>
+            <div class='explanation-box' style='margin-top: 12px;'><strong>💬 상세 설명</strong><p>{explanation_html}</p></div>
+        </div>
+        <div class='result-section'>
+            <div class='result-header'>💡 루틴 v2.0 제안</div>
+            <div class='routine-box'>{routine_v2_html}</div>
+        </div>
         """
         return html
     except (AttributeError, IndexError):
-        return f"<div class='alert error'>AI의 답변 형식이 예상과 달라 자동으로 분석할 수 없습니다.</div><pre>{result_text}</pre>"
+        return f"<div class='result-section'><div class='alert error'>AI의 답변 형식이 예상과 달라 자동으로 분석할 수 없습니다.</div><pre>{result_text}</pre></div>"
 
 # --- 5. 메인 UI 구성 ---
 st.markdown('<div class="header-icon">✍️</div>', unsafe_allow_html=True)
@@ -270,7 +275,7 @@ if 'analysis_result_v6' in st.session_state and st.session_state.analysis_result
         setTimeout(() => {{
             html2canvas(captureElement, {{
                 scale: 2,
-                backgroundColor: '#ffffff',
+                backgroundColor: '#F1F2F5',
                 useCORS: true,
             }}).then(canvas => {{
                 const image = canvas.toDataURL("image/png");
