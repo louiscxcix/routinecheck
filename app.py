@@ -8,7 +8,6 @@ st.set_page_config(
     page_icon="✍️",
     layout="centered",
 )
-
 st.markdown('<meta name="viewport" content="width=device-width, initial-scale=1.0">', unsafe_allow_html=True)
 
 # --- 2. API 키 설정 ---
@@ -16,87 +15,40 @@ try:
     api_key = st.secrets["GEMINI_API_KEY"]
 except (KeyError, FileNotFoundError):
     st.sidebar.warning("API 키를 찾을 수 없습니다.")
-    api_key = st.sidebar.text_input(
-        "여기에 Google AI API 키를 입력하세요.", type="password",
-        help="[Google AI Studio](https://aistudio.google.com/app/apikey)에서 API 키를 발급받을 수 있습니다."
-    )
-
-if api_key:
-    genai.configure(api_key=api_key)
-else:
+    api_key = st.sidebar.text_input("여기에 Google AI API 키를 입력하세요.", type="password")
+if not api_key:
     st.info("앱을 사용하려면 사이드바에서 Google AI API 키를 입력해주세요.")
     st.stop()
+genai.configure(api_key=api_key)
 
-
-# --- 3. 커스텀 CSS ---
+# --- 3. 커스텀 CSS (입력창 전용) ---
 def load_css():
     st.markdown("""
         <style>
-            .stApp {
-                background-color: #F1F2F5;
-                font-family: 'Helvetica', sans-serif;
-            }
+            .stApp { background-color: #F1F2F5; font-family: 'Helvetica', sans-serif; }
             .main .block-container { padding: 2rem 1.5rem; }
             .header-icon {
-                background-color: rgba(43, 167, 209, 0.1);
-                border-radius: 50%; width: 52px; height: 52px;
-                display: flex; align-items: center; justify-content: center;
-                font-size: 28px; margin-bottom: 12px;
+                background-color: rgba(43, 167, 209, 0.1); border-radius: 50%; width: 52px; height: 52px;
+                display: flex; align-items: center; justify-content: center; font-size: 28px; margin-bottom: 12px;
             }
-            .title { color: #0D1628; font-size: 24px; font-weight: 700; line-height: 32px; padding: 0; }
-            .subtitle { color: #86929A; font-size: 14px; line-height: 20px; margin-bottom: 30px; }
-            .input-label {
-                color: #0D1628; font-size: 18px; font-weight: 700;
-                line-height: 28px; margin-bottom: 12px;
-            }
-            .stTextInput > div > div > input,
-            .stTextArea > div > div > textarea,
-            .stSelectbox > div[data-baseweb="select"] > div {
-                background-color: #FFFFFF; border: 1px solid #F1F1F1;
-                border-radius: 12px; box-shadow: none; color: #0D1628;
-                height: 48px; display: flex; align-items: center;
+            .title { color: #0D1628; font-size: 24px; font-weight: 700; }
+            .subtitle { color: #86929A; font-size: 14px; margin-bottom: 30px; }
+            .input-label { color: #0D1628; font-size: 18px; font-weight: 700; margin-bottom: 12px; }
+            .stTextInput > div > div > input, .stTextArea > div > div > textarea, .stSelectbox > div[data-baseweb="select"] > div {
+                background-color: #FFFFFF; border: 1px solid #F1F1F1; border-radius: 12px;
+                box-shadow: none; color: #0D1628; height: 48px; display: flex; align-items: center;
             }
             .stTextArea > div > div > textarea { height: 140px; }
-            
-            /* <<<<<<< 숨겨진 Streamlit 버튼을 위한 CSS */
-            div[data-testid="stForm"] > form > div.st-emotion-cache-1uj9n1c > button {
-                display: none;
-            }
-            
-            #capture-area { border-radius: 16px; background-color: #F1F2F5; }
-            .result-card {
-                background-color: #ffffff; padding: 24px; border-radius: 16px;
-                border: 1px solid #EAEBF0; margin-bottom: 16px;
-            }
-            .result-header {
-                color: #0D1628; font-size: 22px; font-weight: 700;
-                padding-bottom: 12px; margin-bottom: 16px; border-bottom: 1px solid #F1F1F1;
-            }
-            .analysis-item .item-title { color: #0D1628; font-size: 16px; font-weight: 700; }
-            .alert { padding: 12px; border-radius: 8px; margin-top: 8px; font-size: 15px; }
-            .alert.success { background-color: #d4edda; color: #155724; }
-            .alert.warning { background-color: #fff3cd; color: #856404; }
-            .alert.error { background-color: #f8d7da; color: #721c24; }
-            .summary-box p, .explanation-box p, .routine-box {
-                color: #5A6472; font-size: 15px; line-height: 1.6; padding-top: 8px;
-            }
-            @media (max-width: 480px) {
-                .main .block-container { padding: 1rem; }
-                .title { font-size: 22px; }
-                .input-label, .result-header { font-size: 18px; }
-                .result-card { padding: 16px; }
-            }
+            div[data-testid="stForm"] button[type="submit"] { display: none !important; }
         </style>
     """, unsafe_allow_html=True)
 
 load_css()
 
-# --- 4. AI 모델 호출 및 결과 파싱 함수 ---
+# --- 4. AI 모델 호출 함수 ---
 def generate_routine_analysis(sport, routine_type, current_routine):
     model = genai.GenerativeModel('gemini-1.5-flash')
     prompt = f"""
-    ### 페르소나 ###
-    당신은 세계 최고의 선수들을 지도하는 스포츠 심리학자이자 멘탈 코치입니다.
     ### 과업 ###
     **매우 중요: 당신의 답변은 프로그램에 의해 자동으로 분석되므로, 반드시 아래 [출력 형식 예시]에 명시된 출력 형식과 구분자를 정확히 지켜야 합니다.**
     **분석 내용은 불필요한 설명을 제외하고, 핵심 위주로 간결하게 작성해주세요. 전체적인 길이를 기존보다 약 20% 짧게 요약합니다.**
@@ -133,48 +85,59 @@ def generate_routine_analysis(sport, routine_type, current_routine):
         response = model.generate_content(prompt)
         return response.text
     except Exception as e:
-        st.error(f"AI 호출 중 오류가 발생했습니다: {e}")
-        return None
+        return f"ERROR:::{e}"
 
+# --- 5. 결과 파싱 및 HTML 생성 함수 (사용자 HTML 기반으로 전면 수정) ---
 def format_results_to_html(result_text):
     try:
+        if result_text.startswith("ERROR:::"):
+            return f"<div style='...'>AI 호출 중 오류가 발생했습니다: {result_text}</div>"
+
         analysis_table_str = re.search(r":::ANALYSIS_TABLE_START:::(.*?):::ANALYSIS_TABLE_END:::", result_text, re.DOTALL).group(1).strip()
         summary_full_str = re.search(r":::SUMMARY_START:::(.*?):::SUMMARY_END:::", result_text, re.DOTALL).group(1).strip()
         routine_v2_str = re.search(r":::ROUTINE_V2_START:::(.*?):::ROUTINE_V2_END:::", result_text, re.DOTALL).group(1).strip()
         summary_str = re.search(r"한 줄 요약:\s*(.*?)\n", summary_full_str).group(1).strip()
         explanation_str = re.search(r"상세 설명:\s*(.*)", summary_full_str, re.DOTALL).group(1).strip()
-        
-        html = "<div class='result-card'><div class='result-header'>📊 루틴 분석표</div>"
-        table_data = [line.split('|') for line in analysis_table_str.strip().split('\n') if '|' in line]
+
+        # 루틴 분석표 내용 HTML로 변환
+        table_html_content = ""
+        table_data = [line.split('|') for line in analysis_table_str.split('\n')]
         for item, rating, comment in table_data:
-            item, rating, comment = item.strip(), rating.strip(), comment.strip()
-            rating_class, icon = "", ""
-            if "Y" in rating: rating_class, icon = "success", "✅"
-            elif "▲" in rating: rating_class, icon = "warning", "⚠️"
-            elif "N" in rating: rating_class, icon = "error", "❌"
-            html += f"<div class='analysis-item'><div class='item-title'>{item}</div><div class='alert {rating_class}'>{icon} <strong>{rating}:</strong> {comment}</div></div>"
-        html += "</div>"
+            icon = ""
+            if "Y" in rating: icon = "✅"
+            elif "▲" in rating: icon = "⚠️"
+            elif "N" in rating: icon = "❌"
+            table_html_content += f"<strong style='color: #0D1628;'>{item.strip()}</strong><br>{icon} {rating.strip()}: {comment.strip()}<br><br>"
+        
+        # 루틴 v2.0 제안 내용 HTML로 변환
+        routine_v2_html = routine_v2_str.replace('- ', '<br>- ').strip('<br>')
 
-        explanation_html = explanation_str.replace("\n", "<br>").replace("**", "<strong>").replace("**", "</strong>")
-        routine_v2_html = "<ul>" + "".join(f"<li>{line.strip()[2:]}</li>" for line in routine_v2_str.split('\n') if line.strip().startswith('- ')) + "</ul>"
-        routine_v2_html = routine_v2_html.replace("**", "<strong>").replace("**", "</strong>")
-
-        html += f"""
-        <div class='result-card'>
-            <div class='result-header'>📝 종합 분석</div>
-            <div class='summary-box'><div class='item-title'>🎯 한 줄 요약</div><p>{summary_str}</p></div>
-            <div class='explanation-box' style='margin-top: 12px;'><div class='item-title'>💬 상세 설명</div><p>{explanation_html}</p></div>
-        </div>
-        <div class='result-card'>
-            <div class='result-header'>💡 루틴 v2.0 제안</div>
-            <div class='routine-box'>{routine_v2_html}</div>
+        # 사용자 HTML 구조를 템플릿으로 사용하여 내용 채우기
+        html = f"""
+        <div style="background: white; border-radius: 16px; border: 1px solid #EAEBF0; padding: 24px;">
+            <div style="padding-bottom: 20px; border-bottom: 1px solid #F1F1F1; margin-bottom: 20px;">
+                <div style="color: #0D1628; font-size: 18px; font-family: Helvetica; font-weight: 700; line-height: 28px; margin-bottom: 12px;">📊 루틴 분석표</div>
+                <div style="color: #86929A; font-size: 14px; font-family: Helvetica; font-weight: 400; line-height: 22px;">{table_html_content}</div>
+            </div>
+            <div style="padding-bottom: 20px; border-bottom: 1px solid #F1F1F1; margin-bottom: 20px;">
+                <div style="color: #0D1628; font-size: 18px; font-family: Helvetica; font-weight: 700; line-height: 28px; margin-bottom: 12px;">📝 종합 분석</div>
+                <div style="color: #86929A; font-size: 14px; font-family: Helvetica; font-weight: 400; line-height: 22px;">
+                    <strong style='color: #0D1628;'>🎯 한 줄 요약:</strong> {summary_str}
+                    <br><br>
+                    <strong style='color: #0D1628;'>💬 상세 설명:</strong> {explanation_str.replace('\\n', '<br>')}
+                </div>
+            </div>
+            <div>
+                <div style="color: #0D1628; font-size: 18px; font-family: Helvetica; font-weight: 700; line-height: 28px; margin-bottom: 12px;">💡 루틴 v2.0 제안</div>
+                <div style="color: #86929A; font-size: 14px; font-family: Helvetica; font-weight: 400; line-height: 22px;">{routine_v2_html}</div>
+            </div>
         </div>
         """
         return html
-    except (AttributeError, IndexError):
-        return f"<div class='result-card'><div class='alert error'>AI의 답변 형식이 예상과 달라 자동으로 분석할 수 없습니다.</div><pre>{result_text}</pre></div>"
+    except Exception as e:
+        return f"<div style='...'>결과 분석 중 오류 발생: {e}<br><pre>{result_text}</pre></div>"
 
-# --- 5. 메인 UI 구성 ---
+# --- 6. 메인 UI 구성 ---
 st.markdown('<div class="header-icon">✍️</div>', unsafe_allow_html=True)
 st.markdown('<p class="title">AI 루틴 분석</p>', unsafe_allow_html=True)
 st.markdown('<p class="subtitle">승부의 순간, 마음을 다잡는 루틴의 힘<br/>AI 루틴 코치가 도와 드립니다</p>', unsafe_allow_html=True)
@@ -182,44 +145,21 @@ st.markdown('<p class="subtitle">승부의 순간, 마음을 다잡는 루틴의
 with st.form("routine_form_final"):
     st.markdown('<p class="input-label">어떤 종목의 선수이신가요?</p>', unsafe_allow_html=True)
     sport = st.selectbox('Sport', ('탁구', '축구', '농구', '야구', '골프', '테니스', '양궁', '기타'), label_visibility="collapsed")
-    
     st.markdown('<p class="input-label">루틴의 종류를 적어주세요</p>', unsafe_allow_html=True)
     routine_type = st.text_input('Routine Type', placeholder='서브, 자유투, 타석 등', label_visibility="collapsed")
-    
     st.markdown('<p class="input-label">현재 루틴 상세 내용</p>', unsafe_allow_html=True)
     current_routine = st.text_area('Current Routine', placeholder='공을 세번 튀기고, 심호흡을 깊게 한번 하고 바로 슛을 쏩니다', height=140, label_visibility="collapsed")
-    
-    # 실제 제출 기능을 하는 Streamlit 버튼 (CSS로 숨겨짐)
-    submitted = st.form_submit_button("Submit")
+    submitted = st.form_submit_button("Submit Hidden")
 
-# 사용자가 실제로 클릭하는 커스텀 HTML 버튼
 st.markdown("""
-    <div id="custom-submit-button" style="
-        padding: 16px 0;
-        background: #2BA7D1;
-        box-shadow: 0px 5px 10px rgba(26, 26, 26, 0.10);
-        border-radius: 12px;
-        justify-content: center;
-        align-items: center;
-        gap: 8px;
-        display: flex;
-        cursor: pointer;
-        width: 100%;
-    ">
-        <div style="text-align: center; color: white; font-size: 16px; font-family: Helvetica; font-weight: bold; line-height: 20px;">
-            AI 정밀 분석 시작하기
-        </div>
+    <div id="custom-submit-button" style="padding: 16px 0; background: #2BA7D1; box-shadow: 0px 5px 10px rgba(43, 167, 209, 0.2); border-radius: 12px; text-align: center; cursor: pointer; width: 100%; margin-top: -20px;">
+        <span style="color: white; font-size: 16px; font-family: 'Helvetica', sans-serif; font-weight: bold;">AI 정밀 분석 시작하기</span>
     </div>
-
     <script>
-        const customButton = document.getElementById("custom-submit-button");
-        const streamlitButton = window.parent.document.querySelector('div[data-testid="stForm"] button[type="submit"]');
-
-        if (customButton && streamlitButton) {
-            customButton.onclick = function() {
-                streamlitButton.click();
-            }
-        }
+        document.getElementById("custom-submit-button").onclick = function() {
+            const streamlitSubmitButton = window.parent.document.querySelector('div[data-testid="stForm"] button[type="submit"]');
+            if (streamlitSubmitButton) { streamlitSubmitButton.click(); }
+        };
     </script>
 """, unsafe_allow_html=True)
 
@@ -233,35 +173,21 @@ if submitted:
 
 if 'analysis_result' in st.session_state and st.session_state.analysis_result:
     st.divider()
-    
     result_html = format_results_to_html(st.session_state.analysis_result)
-    
     html_with_button = f"""
     <div id="capture-area">{result_html}</div>
     <div style="margin-top: 20px;">
-        <button id="save-btn">분석 결과 이미지로 저장 📸</button>
+        <div id="save-btn" style="width: 100%; background: #2BA7D1; color: white; border-radius: 12px; padding: 16px 0; font-size: 16px; font-weight: bold; border: none; box-shadow: 0px 5px 10px rgba(43, 167, 209, 0.2); cursor: pointer; text-align: center;">
+            분석 결과 이미지로 저장 📸
+        </div>
     </div>
-    <style>
-        #save-btn {{
-            width: 100% !important; background: #2BA7D1 !important; color: white !important;
-            border-radius: 12px !important; padding: 16px 0 !important; font-size: 16px !important;
-            font-weight: bold !important; border: none !important;
-            box-shadow: 0px 5px 10px rgba(26, 26, 26, 0.10) !important;
-            cursor: pointer !important; text-align: center !important;
-        }}
-        #save-btn:hover {{ background: #2490b3 !important; color: white !important; }}
-    </style>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
     <script>
     document.getElementById("save-btn").onclick = function() {{
         const captureElement = document.getElementById("capture-area");
         window.scrollTo(0, 0);
         setTimeout(() => {{
-            html2canvas(captureElement, {{
-                scale: 2,
-                backgroundColor: '#F1F2F5',
-                useCORS: true,
-            }}).then(canvas => {{
+            html2canvas(captureElement, {{ scale: 2, backgroundColor: '#F1F2F5', useCORS: true }}).then(canvas => {{
                 const image = canvas.toDataURL("image/png");
                 const link = document.createElement("a");
                 link.href = image;
