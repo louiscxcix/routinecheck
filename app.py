@@ -28,19 +28,17 @@ else:
     st.stop()
 
 
-# --- 3. 커스텀 CSS (버튼 색상 !important 적용) ---
+# --- 3. 커스텀 CSS (버튼 스타일 통합) ---
 def load_css():
     st.markdown("""
         <style>
-            /* --- 기본 배경 및 폰트 --- */
             .stApp {
                 background-color: #F1F2F5;
+                font-family: 'Helvetica', sans-serif;
             }
             .main .block-container {
                 padding: 2rem 1.5rem;
             }
-
-            /* --- 헤더 --- */
             .header-icon {
                 background-color: rgba(43, 167, 209, 0.1);
                 border-radius: 50%; width: 52px; height: 52px;
@@ -53,32 +51,25 @@ def load_css():
             .subtitle {
                 color: #86929A; font-size: 14px; line-height: 20px; margin-bottom: 30px;
             }
-
-            /* --- 입력 필드 --- */
             .input-label {
                 color: #0D1628; font-size: 18px; font-weight: 700;
                 line-height: 28px; margin-bottom: 12px;
             }
             .stTextInput > div > div > input,
-            .stTextArea > div > div > textarea {
+            .stTextArea > div > div > textarea,
+            .stSelectbox > div[data-baseweb="select"] > div {
                 background-color: #FFFFFF; border: 1px solid #F1F1F1;
                 border-radius: 12px; box-shadow: none; color: #0D1628;
+                height: 48px; display: flex; align-items: center;
             }
-            .stSelectbox > div[data-baseweb="select"] > div {
-                background-color: #FFFFFF;
-                border: 1px solid #F1F1F1;
-                border-radius: 12px;
-                box-shadow: none;
-                color: #0D1628;
-                height: 48px;
-                display: flex;
-                align-items: center;
+            .stTextArea > div > div > textarea {
+                height: 140px;
             }
             
-            /* --- 버튼 --- */
-            .stButton > button {
+            /* <<<<<<< 두 버튼 스타일을 하나로 통합 --- */
+            .stButton > button, #save-btn {
                 width: 100%;
-                background: #2BA7D1 !important; /* <<<<<<< 버튼 색상 강제 적용 */
+                background: #2BA7D1 !important;
                 color: white !important;
                 border-radius: 12px;
                 padding: 14px 0;
@@ -86,48 +77,52 @@ def load_css():
                 font-weight: bold;
                 border: none !important;
                 box-shadow: 0px 5px 10px rgba(26, 26, 26, 0.10);
+                cursor: pointer;
             }
-            .stButton > button:hover {
-                background: #2490b3 !important; /* <<<<<<< 버튼 호버 색상 강제 적용 */
+            .stButton > button:hover, #save-btn:hover {
+                background: #2490b3 !important;
                 color: white !important;
             }
             
             /* --- 결과창 --- */
-            #capture-area {
-                font-family: 'Helvetica', sans-serif;
-                border-radius: 16px; 
-                background-color: #F1F2F5;
-            }
-            .result-section {
-                background-color: #ffffff;
-                padding: 24px;
-                border-radius: 16px;
+            .result-card {
+                background-color: #ffffff; padding: 24px; border-radius: 16px;
                 border: 1px solid #EAEBF0;
-                margin-bottom: 16px;
             }
             .result-header {
-                color: #0D1628; font-size: 18px; font-weight: 700;
-                padding-bottom: 12px; margin-bottom: 16px; border-bottom: 1px solid #F1F1F1;
+                color: #0D1628; font-size: 20px; font-weight: 700;
+            }
+            .clean-divider {
+                border: none; height: 1px;
+                background-color: #F1F1F1; margin: 24px 0;
             }
             .analysis-item { margin-bottom: 16px; }
-            .analysis-item strong { color: #0D1628; font-size: 15px; font-weight: 500;}
-            .alert { padding: 12px; border-radius: 8px; margin-top: 8px; font-size: 14px; }
+            .analysis-item .item-title {
+                color: #0D1628; font-size: 16px; font-weight: 700;
+            }
+            .alert {
+                padding: 12px; border-radius: 8px; margin-top: 8px; font-size: 14px;
+            }
             .alert.success { background-color: #d4edda; color: #155724; }
             .alert.warning { background-color: #fff3cd; color: #856404; }
             .alert.error { background-color: #f8d7da; color: #721c24; }
-            .summary-box, .explanation-box, .routine-box { margin-top: 10px; padding: 16px; border-radius: 8px; }
-            .summary-box { background-color: #F1F5F9; }
-            .summary-box strong, .explanation-box strong, .routine-box strong { color: #0D1628; font-weight: 700; }
-            .summary-box p, .explanation-box p, .routine-box { color: #5A6472; font-size: 14px; line-height: 1.6; }
+            
+            .item-title {
+                color: #0D1628; font-weight: 700; font-size: 16px;
+            }
+            .summary-box, .explanation-box, .routine-box { margin-top: 10px; }
+            .summary-box { background-color: #F1F5F9; padding: 16px; border-radius: 8px;}
+            .summary-box p, .explanation-box p, .routine-box {
+                color: #5A6472; font-size: 14px; line-height: 1.6; padding-top: 8px;
+            }
             .routine-box ul { padding-left: 20px; }
             .routine-box li { margin-bottom: 8px; }
 
-            /* --- 모바일 반응형 CSS --- */
             @media (max-width: 480px) {
                 .main .block-container { padding: 1rem; }
                 .title { font-size: 22px; }
-                .input-label { font-size: 17px; }
-                .result-section { padding: 16px; }
+                .input-label, .result-header { font-size: 18px; }
+                .result-card { padding: 16px; }
             }
         </style>
     """, unsafe_allow_html=True)
@@ -187,7 +182,7 @@ def format_results_to_html(result_text):
         summary_str = re.search(r"한 줄 요약:\s*(.*?)\n", summary_full_str).group(1).strip()
         explanation_str = re.search(r"상세 설명:\s*(.*)", summary_full_str, re.DOTALL).group(1).strip()
         
-        html = "<div class='result-section'><div class='result-header'>📊 루틴 분석표</div>"
+        html_content = "<div><div class='result-header'>📊 루틴 분석표</div>"
         table_data = [line.split('|') for line in analysis_table_str.strip().split('\n') if '|' in line]
         for item, rating, comment in table_data:
             item, rating, comment = item.strip(), rating.strip(), comment.strip()
@@ -195,27 +190,30 @@ def format_results_to_html(result_text):
             if "Y" in rating: rating_class, icon = "success", "✅"
             elif "▲" in rating: rating_class, icon = "warning", "⚠️"
             elif "N" in rating: rating_class, icon = "error", "❌"
-            html += f"<div class='analysis-item'><strong>{item}</strong><div class='alert {rating_class}'>{icon} <strong>{rating}:</strong> {comment}</div></div>"
-        html += "</div>"
-
+            html_content += f"<div class='analysis-item'><div class='item-title'>{item}</div><div class='alert {rating_class}'>{icon} <strong>{rating}:</strong> {comment}</div></div>"
+        
         explanation_html = explanation_str.replace("\n", "<br>").replace("**", "<strong>").replace("**", "</strong>")
         routine_v2_html = "<ul>" + "".join(f"<li>{line.strip()[2:]}</li>" for line in routine_v2_str.split('\n') if line.strip().startswith('- ')) + "</ul>"
         routine_v2_html = routine_v2_html.replace("**", "<strong>").replace("**", "</strong>")
 
-        html += f"""
-        <div class='result-section'>
-            <div class='result-header'>📝 종합 분석</div>
-            <div class='summary-box'><strong>🎯 한 줄 요약</strong><p>{summary_str}</p></div>
-            <div class='explanation-box' style='margin-top: 12px;'><strong>💬 상세 설명</strong><p>{explanation_html}</p></div>
+        html_content += f"""
         </div>
-        <div class='result-section'>
+        <hr class='clean-divider'>
+        <div>
+            <div class='result-header'>📝 종합 분석</div>
+            <div class='summary-box'><div class='item-title'>🎯 한 줄 요약</div><p>{summary_str}</p></div>
+            <div class='explanation-box' style='margin-top: 12px;'><div class='item-title'>💬 상세 설명</div><p>{explanation_html}</p></div>
+        </div>
+        <hr class='clean-divider'>
+        <div>
             <div class='result-header'>💡 루틴 v2.0 제안</div>
             <div class='routine-box'>{routine_v2_html}</div>
         </div>
         """
-        return html
+        return f"<div class='result-card'>{html_content}</div>"
+        
     except (AttributeError, IndexError):
-        return f"<div class='result-section'><div class='alert error'>AI의 답변 형식이 예상과 달라 자동으로 분석할 수 없습니다.</div><pre>{result_text}</pre></div>"
+        return f"<div class='result-card'><div class='alert error'>AI의 답변 형식이 예상과 달라 자동으로 분석할 수 없습니다.</div><pre>{result_text}</pre></div>"
 
 # --- 5. 메인 UI 구성 ---
 st.markdown('<div class="header-icon">✍️</div>', unsafe_allow_html=True)
@@ -241,32 +239,19 @@ if submitted:
     else:
         with st.spinner('AI 코치가 당신의 루틴을 정밀 분석하고 있습니다...'):
             analysis_result = generate_routine_analysis(sport, routine_type, current_routine)
-            st.session_state.analysis_result_v6 = analysis_result
+            st.session_state.analysis_result = analysis_result
 
-if 'analysis_result_v6' in st.session_state and st.session_state.analysis_result_v6:
+if 'analysis_result' in st.session_state and st.session_state.analysis_result:
     st.divider()
     
-    result_html = format_results_to_html(st.session_state.analysis_result_v6)
+    result_html = format_results_to_html(st.session_state.analysis_result)
     
+    # CSS를 본문에서 분리하고, 버튼만 컴포넌트에 남김
     html_with_button = f"""
     <div id="capture-area">{result_html}</div>
     <div style="margin-top: 20px;">
-    <button id="save-btn">분석 결과 이미지로 저장 📸</button>
+        <button id="save-btn">분석 결과 이미지로 저장 📸</button>
     </div>
-    <style>
-        #save-btn {{
-            display: block; width: 100%; padding: 14px; font-size: 16px; font-weight: bold;
-            color: white;
-            background-color: #2BA7D1; /* <<<<<<< 버튼 색상 수정 */
-            border: none;
-            border-radius: 12px;
-            cursor: pointer;
-            box-shadow: 0px 5px 10px rgba(26, 26, 26, 0.10);
-        }}
-        #save-btn:hover {{
-            background-color: #2490b3; /* <<<<<<< 버튼 호버 색상 */
-        }}
-    </style>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
     <script>
     document.getElementById("save-btn").onclick = function() {{
