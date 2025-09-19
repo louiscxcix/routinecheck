@@ -1,6 +1,8 @@
-import streamlit as st
-import google.generativeai as genai
+import os
 import re
+
+import google.generativeai as genai
+import streamlit as st
 
 # --- 1. 페이지 기본 설정 및 뷰포트 추가 ---
 st.set_page_config(
@@ -8,22 +10,29 @@ st.set_page_config(
     page_icon="✍️",
     layout="centered",
 )
-st.markdown('<meta name="viewport" content="width=device-width, initial-scale=1.0">', unsafe_allow_html=True)
+st.markdown(
+    '<meta name="viewport" content="width=device-width, initial-scale=1.0">',
+    unsafe_allow_html=True,
+)
 
 # --- 2. API 키 설정 ---
 try:
-    api_key = st.secrets["GEMINI_API_KEY"]
+    api_key = os.getenv("GEMINI_API_KEY")
 except (KeyError, FileNotFoundError):
     st.sidebar.warning("API 키를 찾을 수 없습니다.")
-    api_key = st.sidebar.text_input("여기에 Google AI API 키를 입력하세요.", type="password")
+    api_key = st.sidebar.text_input(
+        "여기에 Google AI API 키를 입력하세요.", type="password"
+    )
 if not api_key:
     st.info("앱을 사용하려면 사이드바에서 Google AI API 키를 입력해주세요.")
     st.stop()
 genai.configure(api_key=api_key)
 
+
 # --- 3. 커스텀 CSS ---
 def load_css():
-    st.markdown("""
+    st.markdown(
+        """
         <style>
             .stApp { background-color: #F1F2F5; font-family: 'Helvetica', sans-serif; }
             .main .block-container { padding: 2rem 1.5rem; }
@@ -67,13 +76,17 @@ def load_css():
                 .result-card { padding: 16px; }
             }
         </style>
-    """, unsafe_allow_html=True)
+    """,
+        unsafe_allow_html=True,
+    )
+
 
 load_css()
 
+
 # --- 4. AI 모델 호출 및 결과 파싱 함수 ---
 def generate_routine_analysis(sport, routine_type, current_routine):
-    model = genai.GenerativeModel('gemini-1.5-flash')
+    model = genai.GenerativeModel("gemini-1.5-flash")
     prompt = f"""
     ### 과업 ###
     **매우 중요: 당신의 답변은 프로그램에 의해 자동으로 분석되므로, 반드시 아래 [출력 형식 예시]에 명시된 출력 형식과 구분자를 정확히 지켜야 합니다.**
@@ -113,28 +126,83 @@ def generate_routine_analysis(sport, routine_type, current_routine):
     except Exception as e:
         return f"ERROR:::{e}"
 
+
 def format_results_to_html(result_text):
     try:
-        if result_text.startswith("ERROR:::"): return f"<div style='...'>AI 호출 중 오류가 발생했습니다: {result_text}</div>"
-        analysis_table_str = re.search(r":::ANALYSIS_TABLE_START:::(.*?):::ANALYSIS_TABLE_END:::", result_text, re.DOTALL).group(1).strip()
-        summary_full_str = re.search(r":::SUMMARY_START:::(.*?):::SUMMARY_END:::", result_text, re.DOTALL).group(1).strip()
-        routine_v2_str = re.search(r":::ROUTINE_V2_START:::(.*?):::ROUTINE_V2_END:::", result_text, re.DOTALL).group(1).strip()
-        summary_str = re.search(r"한 줄 요약:\s*(.*?)\n", summary_full_str).group(1).strip()
-        explanation_str = re.search(r"상세 설명:\s*(.*)", summary_full_str, re.DOTALL).group(1).strip()
-        
-        html = "<div class='result-card'><div class='result-header'>📊 루틴 분석표</div>"
-        table_data = [line.split('|') for line in analysis_table_str.strip().split('\n') if '|' in line]
+        if result_text.startswith("ERROR:::"):
+            return (
+                f"<div style='...'>AI 호출 중 오류가 발생했습니다: {result_text}</div>"
+            )
+        analysis_table_str = (
+            re.search(
+                r":::ANALYSIS_TABLE_START:::(.*?):::ANALYSIS_TABLE_END:::",
+                result_text,
+                re.DOTALL,
+            )
+            .group(1)
+            .strip()
+        )
+        summary_full_str = (
+            re.search(
+                r":::SUMMARY_START:::(.*?):::SUMMARY_END:::", result_text, re.DOTALL
+            )
+            .group(1)
+            .strip()
+        )
+        routine_v2_str = (
+            re.search(
+                r":::ROUTINE_V2_START:::(.*?):::ROUTINE_V2_END:::",
+                result_text,
+                re.DOTALL,
+            )
+            .group(1)
+            .strip()
+        )
+        summary_str = (
+            re.search(r"한 줄 요약:\s*(.*?)\n", summary_full_str).group(1).strip()
+        )
+        explanation_str = (
+            re.search(r"상세 설명:\s*(.*)", summary_full_str, re.DOTALL)
+            .group(1)
+            .strip()
+        )
+
+        html = (
+            "<div class='result-card'><div class='result-header'>📊 루틴 분석표</div>"
+        )
+        table_data = [
+            line.split("|")
+            for line in analysis_table_str.strip().split("\n")
+            if "|" in line
+        ]
         for item, rating, comment in table_data:
             item, rating, comment = item.strip(), rating.strip(), comment.strip()
             rating_class, icon = "", ""
-            if "Y" in rating: rating_class, icon = "success", "✅"
-            elif "▲" in rating: rating_class, icon = "warning", "⚠️"
-            elif "N" in rating: rating_class, icon = "error", "❌"
+            if "Y" in rating:
+                rating_class, icon = "success", "✅"
+            elif "▲" in rating:
+                rating_class, icon = "warning", "⚠️"
+            elif "N" in rating:
+                rating_class, icon = "error", "❌"
             html += f"<div class='analysis-item'><div class='item-title'>{item}</div><div class='alert {rating_class}'>{icon} <strong>{rating}:</strong> {comment}</div></div>"
         html += "</div>"
-        explanation_html = explanation_str.replace("\n", "<br>").replace("**", "<strong>").replace("**", "</strong>")
-        routine_v2_html = "<ul>" + "".join(f"<li>{line.strip()[2:]}</li>" for line in routine_v2_str.split('\n') if line.strip().startswith('- ')) + "</ul>"
-        routine_v2_html = routine_v2_html.replace("**", "<strong>").replace("**", "</strong>")
+        explanation_html = (
+            explanation_str.replace("\n", "<br>")
+            .replace("**", "<strong>")
+            .replace("**", "</strong>")
+        )
+        routine_v2_html = (
+            "<ul>"
+            + "".join(
+                f"<li>{line.strip()[2:]}</li>"
+                for line in routine_v2_str.split("\n")
+                if line.strip().startswith("- ")
+            )
+            + "</ul>"
+        )
+        routine_v2_html = routine_v2_html.replace("**", "<strong>").replace(
+            "**", "</strong>"
+        )
         html += f"""
         <div class='result-card'>
             <div class='result-header'>📝 종합 분석</div>
@@ -150,22 +218,45 @@ def format_results_to_html(result_text):
     except (AttributeError, IndexError):
         return f"<div class='result-card'><div class='alert error'>AI의 답변 형식이 예상과 달라 자동으로 분석할 수 없습니다.</div><pre>{result_text}</pre></div>"
 
+
 # --- 5. 메인 UI 구성 ---
 st.markdown('<div class="header-icon">✍️</div>', unsafe_allow_html=True)
 st.markdown('<p class="title">AI 루틴 분석</p>', unsafe_allow_html=True)
-st.markdown('<p class="subtitle">승부의 순간, 마음을 다잡는 루틴의 힘<br/>AI 루틴 코치가 도와 드립니다</p>', unsafe_allow_html=True)
+st.markdown(
+    '<p class="subtitle">승부의 순간, 마음을 다잡는 루틴의 힘<br/>AI 루틴 코치가 도와 드립니다</p>',
+    unsafe_allow_html=True,
+)
 
 # <<<<<<< st.form과 st.form_submit_button을 사용하여 안정성과 디자인을 모두 해결
 with st.form("routine_form"):
-    st.markdown('<p class="input-label">어떤 종목의 선수이신가요?</p>', unsafe_allow_html=True)
-    sport = st.selectbox('Sport', ('탁구', '축구', '농구', '야구', '골프', '테니스', '양궁', '기타'), label_visibility="collapsed")
-    
-    st.markdown('<p class="input-label">루틴의 종류를 적어주세요</p>', unsafe_allow_html=True)
-    routine_type = st.text_input('Routine Type', placeholder='서브, 자유투, 타석 등', label_visibility="collapsed")
-    
-    st.markdown('<p class="input-label">현재 루틴 상세 내용</p>', unsafe_allow_html=True)
-    current_routine = st.text_area('Current Routine', placeholder='공을 세번 튀기고, 심호흡을 깊게 한번 하고 바로 슛을 쏩니다', height=140, label_visibility="collapsed")
-    
+    st.markdown(
+        '<p class="input-label">어떤 종목의 선수이신가요?</p>', unsafe_allow_html=True
+    )
+    sport = st.selectbox(
+        "Sport",
+        ("탁구", "축구", "농구", "야구", "골프", "테니스", "양궁", "기타"),
+        label_visibility="collapsed",
+    )
+
+    st.markdown(
+        '<p class="input-label">루틴의 종류를 적어주세요</p>', unsafe_allow_html=True
+    )
+    routine_type = st.text_input(
+        "Routine Type",
+        placeholder="서브, 자유투, 타석 등",
+        label_visibility="collapsed",
+    )
+
+    st.markdown(
+        '<p class="input-label">현재 루틴 상세 내용</p>', unsafe_allow_html=True
+    )
+    current_routine = st.text_area(
+        "Current Routine",
+        placeholder="공을 세번 튀기고, 심호흡을 깊게 한번 하고 바로 슛을 쏩니다",
+        height=140,
+        label_visibility="collapsed",
+    )
+
     st.write("")
     submitted = st.form_submit_button("AI 정밀 분석 시작하기", use_container_width=True)
 
@@ -174,13 +265,15 @@ if submitted:
     if not all([sport, routine_type, current_routine]):
         st.error("모든 항목을 정확하게 입력해주세요.")
     else:
-        with st.spinner('AI 코치가 당신의 루틴을 정밀 분석하고 있습니다...'):
-            st.session_state.analysis_result = generate_routine_analysis(sport, routine_type, current_routine)
+        with st.spinner("AI 코치가 당신의 루틴을 정밀 분석하고 있습니다..."):
+            st.session_state.analysis_result = generate_routine_analysis(
+                sport, routine_type, current_routine
+            )
 
-if 'analysis_result' in st.session_state and st.session_state.analysis_result:
+if "analysis_result" in st.session_state and st.session_state.analysis_result:
     st.divider()
     result_html = format_results_to_html(st.session_state.analysis_result)
-    
+
     # 이미지 저장 버튼은 커스텀 HTML로 구현
     html_with_button = f"""
     <style>
