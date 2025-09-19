@@ -50,6 +50,33 @@ def load_css():
             }
             .stSelectbox > div[data-baseweb="select"] > div { height: 48px; display: flex; align-items: center; }
             .stTextArea > div > div > textarea { height: 140px; }
+
+            /* AI 정밀 분석 버튼 스타일 */
+            div[data-testid="stForm"] button[type="submit"] {
+                width: 100%;
+                padding: 16px 0 !important;
+                font-size: 16px !important;
+                font-weight: 600 !important;
+                color: white !important;
+                background: linear-gradient(135deg, #2BA7D1 0%, #1A8BB0 100%) !important;
+                border: 2px solid #1A8BB0 !important;
+                border-radius: 16px !important;
+                box-shadow: 0px 4px 12px rgba(43, 167, 209, 0.3) !important;
+                transition: all 0.3s ease !important;
+                margin-top: 20px !important;
+            }
+
+            div[data-testid="stForm"] button[type="submit"]:hover {
+                background: linear-gradient(135deg, #1A8BB0 0%, #147A9D 100%) !important;
+                border: 2px solid #147A9D !important;
+                box-shadow: 0px 6px 16px rgba(43, 167, 209, 0.4) !important;
+                transform: translateY(-2px) !important;
+            }
+
+            div[data-testid="stForm"] button[type="submit"]:focus {
+                outline: none !important;
+                box-shadow: 0px 6px 16px rgba(43, 167, 209, 0.4) !important;
+            }
             
             /* --- 결과창 스타일 --- */
             #capture-area { border-radius: 16px; background-color: #F1F2F5; }
