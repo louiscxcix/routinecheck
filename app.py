@@ -4,9 +4,9 @@ import re
 import google.generativeai as genai
 import streamlit as st
 
-# --- 1. Configuración básica de la página y adición de la ventana gráfica ---
+# --- 1. 페이지 기본 설정 및 뷰포트 추가 ---
 st.set_page_config(
-    page_title="Análisis de Rutina con IA",
+    page_title="AI 루틴 분석",
     page_icon="✍️",
     layout="centered",
 )
@@ -15,25 +15,25 @@ st.markdown(
     unsafe_allow_html=True,
 )
 
-# --- 2. Configuración de la clave de la API ---
+# --- 2. API 키 설정 ---
 try:
-    # Obtiene la clave de la API desde los secretos de Streamlit Cloud.
+    # Streamlit Cloud의 Secrets에서 API 키를 가져옵니다.
     api_key = st.secrets["GEMINI_API_KEY"]
 except (KeyError, FileNotFoundError):
-    # Si estás en un entorno local o los secretos no están configurados, la solicita en la barra lateral.
-    st.sidebar.warning("No se encontró la GEMINI_API_KEY. Por favor, introdúcela manualmente.")
+    # 로컬 환경이나 Secrets가 설정되지 않은 경우 사이드바에서 입력받습니다.
+    st.sidebar.warning("GEMINI_API_KEY를 찾을 수 없습니다. 직접 입력해주세요.")
     api_key = st.sidebar.text_input(
-        "Introduce tu clave de la API de Google AI aquí.", type="password"
+        "여기에 Google AI API 키를 입력하세요.", type="password"
     )
 
 if not api_key:
-    st.info("Para usar la aplicación, por favor introduce tu clave de la API de Google AI.")
+    st.info("앱을 사용하려면 Google AI API 키를 입력해주세요.")
     st.stop()
 
 genai.configure(api_key=api_key)
 
 
-# --- 3. CSS personalizado ---
+# --- 3. 커스텀 CSS ---
 def load_css():
     st.markdown(
         """
@@ -84,41 +84,41 @@ def load_css():
 load_css()
 
 
-# --- 4. Función para llamar al modelo de IA y analizar los resultados ---
+# --- 4. AI 모델 호출 및 결과 파싱 함수 ---
 def generate_routine_analysis(sport, routine_type, current_routine):
     model = genai.GenerativeModel("gemini-1.5-flash")
     prompt = f"""
-    ### Tarea ###
-    **Muy importante: Tu respuesta será analizada automáticamente por un programa, por lo que debes seguir estrictamente el formato y los delimitadores especificados en el [Ejemplo de formato de salida] a continuación.**
-    **El contenido del análisis debe ser conciso y centrarse en los puntos clave, omitiendo explicaciones innecesarias. Resume la longitud total aproximadamente un 20% más corta que antes.**
-    Basándote en la información del atleta a continuación, genera los siguientes tres elementos **usando los delimitadores especificados**.
-    **1. Tabla de análisis de la rutina:** Genera 5 líneas en el formato `Principio | Evaluación (Y/N/▲) | Razón en una línea`
-    **2. Análisis general:** Incluye un 'Resumen de una línea' y una 'Explicación detallada' (resumida en 3-4 frases).
-    **3. Propuesta de rutina v2.0:** Presenta un plan de acción concreto con un **título** para cada elemento. Usa `-` de Markdown para la lista. Ejemplo: `- **Respiración profunda y preparación (Control de energía):** Aléjate de la mesa...`
+    ### 과업 ###
+    **매우 중요: 당신의 답변은 프로그램에 의해 자동으로 분석되므로, 반드시 아래 [출력 형식 예시]에 명시된 출력 형식과 구분자를 정확히 지켜야 합니다.**
+    **분석 내용은 불필요한 설명을 제외하고, 핵심 위주로 간결하게 작성해주세요. 전체적인 길이를 기존보다 약 20% 짧게 요약합니다.**
+    아래 선수 정보를 바탕으로, 다음 세 가지 내용을 **지정된 구분자(delimiter)를 사용하여** 생성하세요.
+    **1. 루틴 분석표:** `원칙 항목 | 평가 (Y/N/▲) | 한 줄 이유` 형태로 5줄 생성
+    **2. 종합 분석:** '한 줄 요약'과 '상세 설명' (3~4 문장으로 요약) 포함
+    **3. 루틴 v2.0 제안:** 각 항목에 **타이틀**을 포함하여 구체적인 실행 방안 제시. 목록에는 Markdown의 `-`를 사용하세요. 예: `- **심호흡 및 준비 (에너지 컨트롤):** 테이블 뒤로 물러나...`
     ---
-    **[Ejemplo de formato de salida]**
+    **[출력 형식 예시]**
     :::ANALYSIS_TABLE_START:::
-    [Acción] Consistencia del movimiento clave | ▲ | El intento de botar la pelota es bueno, pero el número de botes o la intensidad varían cada vez, faltando consistencia.
-    [Acción] Control de energía | N | No se incluye una respiración consciente o un movimiento para controlar la tensión.
-    [Cognitivo] Autoafirmación positiva e imaginería | Y | Se incluye claramente una parte donde se dicen palabras positivas a uno mismo.
-    [Recuperación] Rutina de reenfoque | N | No hay un proceso para recuperarse después de un error o cuando la concentración se pierde.
-    [Acción+Cognitivo] Autoelogio/Celebración | ▲ | Hay un pequeño gesto de apretar el puño, pero no es suficiente como un proceso significativo para internalizar el éxito.
+    [행동] 핵심 동작의 일관성 | ▲ | 공을 튀기는 시도는 좋으나, 횟수나 강도가 매번 달라 일관성이 부족합니다.
+    [행동] 에너지 컨트롤 | N | 긴장을 조절하기 위한 의식적인 호흡이나 동작이 포함되어 있지 않습니다.
+    [인지] 긍정적 자기암시 및 이미지 상상 | Y | 스스로에게 긍정적인 말을 하는 부분이 명확하게 포함되어 있습니다.
+    [회복] 재집중 루틴 | N | 실수했거나 집중이 흐트러졌을 때 돌아올 수 있는 과정이 없습니다.
+    [행동+인지] 자기 칭찬/세리머니 | ▲ | 작게 주먹을 쥐는 행동은 있으나, 성공을 내재화하는 의미있는 과정으로는 부족합니다.
     :::ANALYSIS_TABLE_END:::
     :::SUMMARY_START:::
-    **Resumen de una línea:** Tiene una buena base cognitiva con autoafirmación positiva, pero necesita urgentemente una rutina de acción consistente y una estrategia de control de energía para respaldarla.
-    **Explicación detallada:** La rutina actual está preparada 'mentalmente', pero le falta preparación 'física'. Sin una rutina de acción que controle la tensión física y cree movimientos consistentes, la probabilidad de cometer errores bajo presión es alta. Es crucial añadir una rutina de acción para alinear el estado mental y físico.
+    **한 줄 요약:** 긍정적 자기암시라는 좋은 인지적 기반을 가지고 있으나, 이를 뒷받침할 일관된 행동 루틴과 에너지 조절 전략이 시급합니다.
+    **상세 설명:** 현재 루틴은 '마음'의 준비는 되어있으나 '몸'의 준비가 부족한 상태입니다. 신체적 긴장도를 조절하고 일관된 동작을 만들어주는 행동 루틴이 없다면 압박 상황에서 실수가 나올 확률이 높습니다. 행동 루틴을 추가하여 마음과 몸의 상태를 일치시키는 것이 중요합니다.
     :::SUMMARY_END:::
     :::ROUTINE_V2_START:::
-    - **Respiración profunda y preparación (Control de energía):** Aléjate de la mesa, inhala por la nariz durante 3 segundos y exhala lentamente por la boca durante 5 segundos para estabilizar el ritmo cardíaco.
-    - **Rutina de movimiento (Consistencia):** Desde una posición fija, bota la pelota exactamente **dos veces**. Esto actúa como un 'ancla' para bloquear pensamientos innecesarios.
-    - **Rutina cognitiva (Autoafirmación):** (Manteniendo la fortaleza existente) Repite internamente la autoafirmación preparada ("Estoy listo").
-    - **Ejecución y celebración (Autoelogio):** Tras un éxito, aprieta ligeramente el puño y di "¡Bien hecho!" para grabar la experiencia de éxito en el cerebro.
+    - **심호흡 및 준비 (에너지 컨트롤):** 테이블 뒤로 물러나 코로 3초간 숨을 들이마시고, 입으로 5초간 길게 내뱉어 심박수를 안정시킵니다.
+    - **동작 루틴 (일관성):** 정해진 위치에서 공을 정확히 **두 번만** 튀깁니다. 이는 불필요한 생각을 차단하는 '앵커' 역할을 합니다.
+    - **인지 루틴 (자기암시):** (기존의 장점 유지) 속으로 준비된 자기암시("나는 준비되었다")를 외칩니다.
+    - **실행 및 세리머니 (자기 칭찬):** 성공 시 가볍게 주먹을 쥐며 "좋았어!"라고 인정해 성공 경험을 뇌에 각인시킵니다.
     :::ROUTINE_V2_END:::
     ---
-    ### Información del atleta ###
-    - Deporte: {sport}
-    - Tipo de rutina: {routine_type}
-    - Rutina actual: {current_routine}
+    ### 선수 정보 ###
+    - 종목: {sport}
+    - 루틴 종류: {routine_type}
+    - 현재 루틴: {current_routine}
     """
     try:
         response = model.generate_content(prompt)
@@ -128,7 +128,7 @@ def generate_routine_analysis(sport, routine_type, current_routine):
 
 
 def format_results_to_html(result_text):
-    # --- CSS para el nuevo diseño de la ventana de resultados ---
+    # --- 새로운 결과창 디자인을 위한 CSS ---
     new_style = """
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Helvetica+Neue:wght@400;700&display=swap');
@@ -188,21 +188,21 @@ def format_results_to_html(result_text):
     try:
         if result_text.startswith("ERROR:::"):
             error_message = result_text.replace('ERROR:::', '')
-            return f"{new_style}<div id='capture-area'><div class='result-section'><div class='section-header'>❌ Error</div><div class='item-content'>Se produjo un error al contactar con la IA: {error_message}</div></div></div>"
+            return f"{new_style}<div id='capture-area'><div class='result-section'><div class='section-header'>❌ 오류</div><div class='item-content'>AI 호출 중 오류가 발생했습니다: {error_message}</div></div></div>"
 
-        # Analiza las diferentes secciones
+        # 각 섹션별 데이터 파싱
         analysis_table_str = re.search(r":::ANALYSIS_TABLE_START:::(.*?):::ANALYSIS_TABLE_END:::", result_text, re.DOTALL).group(1).strip()
         summary_full_str = re.search(r":::SUMMARY_START:::(.*?):::SUMMARY_END:::", result_text, re.DOTALL).group(1).strip()
         routine_v2_str = re.search(r":::ROUTINE_V2_START:::(.*?):::ROUTINE_V2_END:::", result_text, re.DOTALL).group(1).strip()
 
-        # Analiza los datos en detalle
-        summary_str = re.search(r"Resumen de una línea:\s*(.*?)\n", summary_full_str).group(1).strip()
-        explanation_str = re.search(r"Explicación detallada:\s*(.*)", summary_full_str, re.DOTALL).group(1).strip()
+        # 상세 데이터 파싱
+        summary_str = re.search(r"한 줄 요약:\s*(.*?)\n", summary_full_str).group(1).strip()
+        explanation_str = re.search(r"상세 설명:\s*(.*)", summary_full_str, re.DOTALL).group(1).strip()
 
-        # --- 1. Genera el HTML para la tabla de análisis de la rutina ---
+        # --- 1. 루틴 분석표 HTML 생성 ---
         html = f"{new_style}<div id='capture-area'>"
         html += "<div class='result-section'>"
-        html += "<div class='section-header'>📊 Tabla de análisis de la rutina</div>"
+        html += "<div class='section-header'>📊 루틴 분석표</div>"
         
         table_data = [line.split("|") for line in analysis_table_str.strip().split("\n") if "|" in line]
         
@@ -221,23 +221,23 @@ def format_results_to_html(result_text):
             """
         html += "</div>"
 
-        # --- 2. Genera el HTML para el análisis general ---
+        # --- 2. 종합 분석 HTML 생성 ---
         html += f"""
         <div class='result-section'>
-            <div class='section-header'>🎯 Resumen de una línea</div>
+            <div class='section-header'>🎯 한 줄 요약</div>
             <div class='item-content summary-line'>{summary_str}</div>
         </div>
         """
         html += f"""
         <div class='result-section'>
-            <div class='section-header'>💬 Explicación detallada</div>
+            <div class='section-header'>💬 상세 설명</div>
             <div class='item-content'>{explanation_str}</div>
         </div>
         """
         
-        # --- 3. Genera el HTML para la propuesta de rutina v2.0 ---
+        # --- 3. 루틴 v2.0 제안 HTML 생성 ---
         html += "<div class='result-section'>"
-        html += "<div class='section-header'>💡 Propuesta de rutina v2.0</div>"
+        html += "<div class='section-header'>💡 루틴 v2.0 제안</div>"
         
         routine_items = [line.strip()[2:] for line in routine_v2_str.split("\n") if line.strip().startswith("- ")]
         for item in routine_items:
@@ -253,55 +253,55 @@ def format_results_to_html(result_text):
         return html
 
     except (AttributeError, IndexError):
-        return f"{new_style}<div id='capture-area'><div class='result-section'><div class='section-header'>❌ Error de análisis</div><div class='item-content'>El formato de la respuesta de la IA no es el esperado y no se puede analizar automáticamente. Por favor, revisa la respuesta original a continuación.</div><pre style='white-space: pre-wrap; word-wrap: break-word; background-color: #f0f0f0; padding: 15px; border-radius: 8px;'>{result_text}</pre></div></div>"
+        return f"{new_style}<div id='capture-area'><div class='result-section'><div class='section-header'>❌ 파싱 오류</div><div class='item-content'>AI의 답변 형식이 예상과 달라 자동으로 분석할 수 없습니다. 아래 원본 답변을 확인해주세요.</div><pre style='white-space: pre-wrap; word-wrap: break-word; background-color: #f0f0f0; padding: 15px; border-radius: 8px;'>{result_text}</pre></div></div>"
 
 
-# --- 5. Composición de la interfaz de usuario principal ---
+# --- 5. 메인 UI 구성 ---
 st.markdown('<div class="header-icon">✍️</div>', unsafe_allow_html=True)
-st.markdown('<p class="title">Análisis de Rutina con IA</p>', unsafe_allow_html=True)
+st.markdown('<p class="title">AI 루틴 분석</p>', unsafe_allow_html=True)
 st.markdown(
-    '<p class="subtitle">El poder de la rutina para dominar tu mente en el momento decisivo<br/>Tu entrenador de rutina con IA está aquí para ayudarte</p>',
+    '<p class="subtitle">승부의 순간, 마음을 다잡는 루틴의 힘<br/>AI 루틴 코치가 도와 드립니다</p>',
     unsafe_allow_html=True,
 )
 
 with st.form("routine_form"):
     st.markdown(
-        '<p class="input-label">¿Qué tipo de deportista eres?</p>', unsafe_allow_html=True
+        '<p class="input-label">어떤 종목의 선수이신가요?</p>', unsafe_allow_html=True
     )
     sport = st.selectbox(
-        "Deporte",
-        ("Tenis de mesa", "Fútbol", "Baloncesto", "Béisbol", "Golf", "Tenis", "Tiro con arco", "Otro"),
+        "Sport",
+        ("탁구", "축구", "농구", "야구", "골프", "테니스", "양궁", "기타"),
         label_visibility="collapsed",
     )
 
     st.markdown(
-        '<p class="input-label">Describe el tipo de rutina</p>', unsafe_allow_html=True
+        '<p class="input-label">루틴의 종류를 적어주세요</p>', unsafe_allow_html=True
     )
     routine_type = st.text_input(
-        "Tipo de rutina",
-        placeholder="Ej: Saque, tiro libre, bateo, putt, etc.",
+        "Routine Type",
+        placeholder="예: 서브, 자유투, 타석, 퍼팅 등",
         label_visibility="collapsed",
     )
 
     st.markdown(
-        '<p class="input-label">Detalles de tu rutina actual</p>', unsafe_allow_html=True
+        '<p class="input-label">현재 루틴 상세 내용</p>', unsafe_allow_html=True
     )
     current_routine = st.text_area(
-        "Rutina actual",
-        placeholder="Ej: Boto la pelota tres veces, respiro hondo una vez y luego lanzo.",
+        "Current Routine",
+        placeholder="예: 공을 세번 튀기고, 심호흡을 깊게 한번 하고 바로 슛을 쏩니다.",
         height=140,
         label_visibility="collapsed",
     )
 
     st.write("")
-    submitted = st.form_submit_button("Iniciar análisis detallado con IA", use_container_width=True)
+    submitted = st.form_submit_button("AI 정밀 분석 시작하기", use_container_width=True)
 
 
 if submitted:
     if not all([sport, routine_type, current_routine]):
-        st.error("Por favor, completa todos los campos con precisión.")
+        st.error("모든 항목을 정확하게 입력해주세요.")
     else:
-        with st.spinner("El entrenador de IA está analizando tu rutina en detalle..."):
+        with st.spinner("AI 코치가 당신의 루틴을 정밀 분석하고 있습니다..."):
             st.session_state.analysis_result = generate_routine_analysis(
                 sport, routine_type, current_routine
             )
@@ -310,7 +310,7 @@ if "analysis_result" in st.session_state and st.session_state.analysis_result:
     st.divider()
     result_html = format_results_to_html(st.session_state.analysis_result)
 
-    # Botón para guardar la imagen y mostrar los resultados
+    # 이미지 저장 버튼 및 결과 출력
     html_with_button = f"""
     <style>
         #save-btn {{
@@ -330,27 +330,27 @@ if "analysis_result" in st.session_state and st.session_state.analysis_result:
     </style>
     {result_html}
     <div style="margin-top: 20px;">
-        <div id="save-btn">Guardar resultados como imagen 📸</div>
+        <div id="save-btn">분석 결과 이미지로 저장 📸</div>
     </div>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
     <script>
     document.getElementById("save-btn").onclick = function() {{
         const captureElement = document.getElementById("capture-area");
-        // Antes de capturar la imagen, desplázate a la parte superior para asegurar que toda el área sea visible
+        // 이미지 캡쳐 전 스크롤을 최상단으로 이동하여 전체 영역이 보이도록 함
         window.scrollTo(0, 0); 
         setTimeout(() => {{
             html2canvas(captureElement, {{
-                scale: 2, // Aumenta la resolución al doble para mayor nitidez
-                backgroundColor: '#F1F2F5', // Especifica el color de fondo
+                scale: 2, // 해상도 2배로 높여 선명하게 저장
+                backgroundColor: '#F1F2F5', // 배경색 지정
                 useCORS: true
             }}).then(canvas => {{
                 const image = canvas.toDataURL("image/png");
                 const link = document.createElement("a");
                 link.href = image;
-                link.download = "analisis-rutina-ia.png";
+                link.download = "ai-routine-analysis.png";
                 link.click();
             }});
-        }}, 200); // Un pequeño retardo para el renderizado
+        }}, 200); // 렌더링을 위한 약간의 지연 시간
     }}
     </script>
     """
