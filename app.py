@@ -17,15 +17,19 @@ st.markdown(
 
 # --- 2. API 키 설정 ---
 try:
-    api_key = os.getenv("GEMINI_API_KEY")
+    # Streamlit Cloud의 Secrets에서 API 키를 가져옵니다.
+    api_key = st.secrets["GEMINI_API_KEY"]
 except (KeyError, FileNotFoundError):
-    st.sidebar.warning("API 키를 찾을 수 없습니다.")
+    # 로컬 환경이나 Secrets가 설정되지 않은 경우 사이드바에서 입력받습니다.
+    st.sidebar.warning("GEMINI_API_KEY를 찾을 수 없습니다. 직접 입력해주세요.")
     api_key = st.sidebar.text_input(
         "여기에 Google AI API 키를 입력하세요.", type="password"
     )
+
 if not api_key:
-    st.info("앱을 사용하려면 사이드바에서 Google AI API 키를 입력해주세요.")
+    st.info("앱을 사용하려면 Google AI API 키를 입력해주세요.")
     st.stop()
+
 genai.configure(api_key=api_key)
 
 
@@ -43,7 +47,7 @@ def load_css():
             .title { color: #0D1628; font-size: 24px; font-weight: 700; }
             .subtitle { color: #8692A2; font-size: 14px; margin-bottom: 30px; line-height: 1.6;}
             .input-label { color: #0D1628; font-size: 18px; font-weight: 700; margin-bottom: 12px; }
-            
+
             .stTextInput > div > div > input, .stTextArea > div > div > textarea, .stSelectbox > div[data-baseweb="select"] > div {
                 background-color: #FFFFFF; border: 1px solid #E5E7EB; border-radius: 12px;
                 box-shadow: none; color: #0D1628;
@@ -51,7 +55,6 @@ def load_css():
             .stSelectbox > div[data-baseweb="select"] > div { height: 48px; display: flex; align-items: center; }
             .stTextArea > div > div > textarea { height: 140px; }
 
-            /* AI 정밀 분석 버튼 스타일 */
             div[data-testid="stForm"] button[type="submit"] {
                 width: 100%;
                 padding: 16px 0 !important;
@@ -73,34 +76,108 @@ def load_css():
                 transform: translateY(-2px) !important;
             }
 
-            div[data-testid="stForm"] button[type="submit"]:focus {
-                outline: none !important;
-                box-shadow: 0px 6px 16px rgba(43, 167, 209, 0.4) !important;
-            }
-            
-            /* --- 결과창 스타일 --- */
-            #capture-area { border-radius: 16px; background-color: #F1F2F5; }
+            /* --- 여기가 수정된 결과창 스타일 --- */
+            #capture-area { border-radius: 16px; background-color: #F1F2F5; padding-top: 1px; }
             .result-card {
-                background-color: #ffffff; padding: 24px; border-radius: 16px;
-                border: 1px solid #EAEBF0; margin-bottom: 16px;
+                background-color: #ffffff;
+                padding: 24px;
+                border-radius: 16px;
+                border: 1px solid #EAEBF0;
+                margin-bottom: 20px;
+                box-shadow: 0 4px 12px rgba(0,0,0,0.05);
             }
             .result-header {
-                color: #0D1628; font-size: 22px; font-weight: 700;
-                padding-bottom: 12px; margin-bottom: 16px; border-bottom: 1px solid #F1F1F1;
+                display: flex;
+                align-items: center;
+                color: #0D1628;
+                font-size: 20px;
+                font-weight: 700;
+                padding-bottom: 14px;
+                margin-bottom: 18px;
+                border-bottom: 1px solid #F1F1F1;
             }
-            .analysis-item .item-title { color: #0D1628; font-size: 16px; font-weight: 700; }
-            .alert { padding: 12px; border-radius: 8px; margin-top: 8px; font-size: 15px; }
-            .alert.success { background-color: #d4edda; color: #155724; }
-            .alert.warning { background-color: #fff3cd; color: #856404; }
-            .alert.error { background-color: #f8d7da; color: #721c24; }
-            .summary-box p, .explanation-box p, .routine-box {
-                color: #5A6472; font-size: 15px; line-height: 1.6; padding-top: 8px;
+            .result-header-icon {
+                font-size: 22px;
+                margin-right: 10px;
             }
-            @media (max-width: 480px) {
-                .main .block-container { padding: 1rem; }
-                .title { font-size: 22px; }
-                .input-label, .result-header { font-size: 18px; }
-                .result-card { padding: 16px; }
+            .analysis-item {
+                margin-bottom: 16px;
+            }
+            .analysis-item:last-child {
+                margin-bottom: 0;
+            }
+            .item-title {
+                color: #0D1628;
+                font-size: 16px;
+                font-weight: 600;
+                margin-bottom: 8px;
+            }
+            .alert {
+                padding: 12px 16px;
+                border-radius: 10px;
+                font-size: 14px;
+                line-height: 1.6;
+                display: flex;
+                align-items: center;
+            }
+            .alert .icon {
+                font-size: 18px;
+                margin-right: 10px;
+            }
+            .alert.success { background-color: #E6F6EC; color: #1E854A; border-left: 4px solid #4CAF50; }
+            .alert.warning { background-color: #FFF9E6; color: #B38600; border-left: 4px solid #FFC107; }
+            .alert.error   { background-color: #FDEDED; color: #A82A2A; border-left: 4px solid #F44336; }
+
+            .summary-box, .explanation-box {
+                 color: #5A6472; font-size: 15px; line-height: 1.7; padding: 12px; border-radius: 8px; background-color: #F8F9FA;
+            }
+            .summary-box { margin-bottom: 16px; }
+            .summary-box .item-title, .explanation-box .item-title {
+                 font-size: 16px; font-weight: 700; color: #2BA7D1; margin-bottom: 6px;
+            }
+
+            .routine-v2-list {
+                list-style: none;
+                padding-left: 0;
+                counter-reset: step-counter;
+            }
+            .routine-v2-list li {
+                counter-increment: step-counter;
+                margin-bottom: 16px;
+                padding: 16px;
+                background-color: #F8F9FA;
+                border-radius: 12px;
+                border: 1px solid #EAEBF0;
+                position: relative;
+                padding-left: 50px;
+            }
+            .routine-v2-list li::before {
+                content: counter(step-counter);
+                position: absolute;
+                left: 16px;
+                top: 50%;
+                transform: translateY(-50%);
+                width: 28px;
+                height: 28px;
+                border-radius: 50%;
+                background-color: #2BA7D1;
+                color: white;
+                font-weight: 700;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                font-size: 14px;
+            }
+            .routine-v2-list li .step-title {
+                font-weight: 700;
+                color: #0D1628;
+                font-size: 16px;
+                margin-bottom: 6px;
+            }
+            .routine-v2-list li .step-content {
+                font-size: 15px;
+                color: #5A6472;
+                line-height: 1.6;
             }
         </style>
     """,
@@ -121,7 +198,7 @@ def generate_routine_analysis(sport, routine_type, current_routine):
     아래 선수 정보를 바탕으로, 다음 세 가지 내용을 **지정된 구분자(delimiter)를 사용하여** 생성하세요.
     **1. 루틴 분석표:** `원칙 항목 | 평가 (Y/N/▲) | 한 줄 이유` 형태로 5줄 생성
     **2. 종합 분석:** '한 줄 요약'과 '상세 설명' (3~4 문장으로 요약) 포함
-    **3. 루틴 v2.0 제안:** 구체적인 실행 방안 제시. 목록에는 Markdown의 `-`를 사용하세요.
+    **3. 루틴 v2.0 제안:** 각 항목에 **타이틀**을 포함하여 구체적인 실행 방안 제시. 목록에는 Markdown의 `-`를 사용하세요. 예: `- **심호흡 및 준비 (에너지 컨트롤):** 테이블 뒤로 물러나...`
     ---
     **[출력 형식 예시]**
     :::ANALYSIS_TABLE_START:::
@@ -156,52 +233,23 @@ def generate_routine_analysis(sport, routine_type, current_routine):
 
 def format_results_to_html(result_text):
     try:
+        # 오류 발생 시 처리
         if result_text.startswith("ERROR:::"):
-            return (
-                f"<div style='...'>AI 호출 중 오류가 발생했습니다: {result_text}</div>"
-            )
-        analysis_table_str = (
-            re.search(
-                r":::ANALYSIS_TABLE_START:::(.*?):::ANALYSIS_TABLE_END:::",
-                result_text,
-                re.DOTALL,
-            )
-            .group(1)
-            .strip()
-        )
-        summary_full_str = (
-            re.search(
-                r":::SUMMARY_START:::(.*?):::SUMMARY_END:::", result_text, re.DOTALL
-            )
-            .group(1)
-            .strip()
-        )
-        routine_v2_str = (
-            re.search(
-                r":::ROUTINE_V2_START:::(.*?):::ROUTINE_V2_END:::",
-                result_text,
-                re.DOTALL,
-            )
-            .group(1)
-            .strip()
-        )
-        summary_str = (
-            re.search(r"한 줄 요약:\s*(.*?)\n", summary_full_str).group(1).strip()
-        )
-        explanation_str = (
-            re.search(r"상세 설명:\s*(.*)", summary_full_str, re.DOTALL)
-            .group(1)
-            .strip()
-        )
+            return f"<div class='result-card'><div class='alert error'>AI 호출 중 오류가 발생했습니다: {result_text.replace('ERROR:::', '')}</div></div>"
 
-        html = (
-            "<div class='result-card'><div class='result-header'>📊 루틴 분석표</div>"
-        )
-        table_data = [
-            line.split("|")
-            for line in analysis_table_str.strip().split("\n")
-            if "|" in line
-        ]
+        # 각 섹션별 데이터 파싱
+        analysis_table_str = re.search(r":::ANALYSIS_TABLE_START:::(.*?):::ANALYSIS_TABLE_END:::", result_text, re.DOTALL).group(1).strip()
+        summary_full_str = re.search(r":::SUMMARY_START:::(.*?):::SUMMARY_END:::", result_text, re.DOTALL).group(1).strip()
+        routine_v2_str = re.search(r":::ROUTINE_V2_START:::(.*?):::ROUTINE_V2_END:::", result_text, re.DOTALL).group(1).strip()
+
+        # 상세 데이터 파싱
+        summary_str = re.search(r"한 줄 요약:\s*(.*?)\n", summary_full_str).group(1).strip()
+        explanation_str = re.search(r"상세 설명:\s*(.*)", summary_full_str, re.DOTALL).group(1).strip().replace("\n", "<br>")
+
+        # --- 1. 루틴 분석표 HTML 생성 ---
+        html = "<div class='result-card'><div class='result-header'><span class='result-header-icon'>📊</span>루틴 분석표</div>"
+        table_data = [line.split("|") for line in analysis_table_str.strip().split("\n") if "|" in line]
+        
         for item, rating, comment in table_data:
             item, rating, comment = item.strip(), rating.strip(), comment.strip()
             rating_class, icon = "", ""
@@ -211,39 +259,60 @@ def format_results_to_html(result_text):
                 rating_class, icon = "warning", "⚠️"
             elif "N" in rating:
                 rating_class, icon = "error", "❌"
-            html += f"<div class='analysis-item'><div class='item-title'>{item}</div><div class='alert {rating_class}'>{icon} <strong>{rating}:</strong> {comment}</div></div>"
+            
+            html += f"""
+            <div class='analysis-item'>
+                <div class='item-title'>{item}</div>
+                <div class='alert {rating_class}'>
+                    <span class='icon'>{icon}</span>
+                    <span><strong>{rating}:</strong> {comment}</span>
+                </div>
+            </div>
+            """
         html += "</div>"
-        explanation_html = (
-            explanation_str.replace("\n", "<br>")
-            .replace("**", "<strong>")
-            .replace("**", "</strong>")
-        )
-        routine_v2_html = (
-            "<ul>"
-            + "".join(
-                f"<li>{line.strip()[2:]}</li>"
-                for line in routine_v2_str.split("\n")
-                if line.strip().startswith("- ")
-            )
-            + "</ul>"
-        )
-        routine_v2_html = routine_v2_html.replace("**", "<strong>").replace(
-            "**", "</strong>"
-        )
+
+        # --- 2. 종합 분석 HTML 생성 ---
         html += f"""
         <div class='result-card'>
-            <div class='result-header'>📝 종합 분석</div>
-            <div class='summary-box'><div class='item-title'>🎯 한 줄 요약</div><p>{summary_str}</p></div>
-            <div class='explanation-box' style='margin-top: 12px;'><div class='item-title'>💬 상세 설명</div><p>{explanation_html}</p></div>
+            <div class='result-header'><span class='result-header-icon'>📝</span>종합 분석</div>
+            <div class='summary-box'>
+                <div class='item-title'>🎯 한 줄 요약</div>
+                <p>{summary_str}</p>
+            </div>
+            <div class='explanation-box'>
+                <div class='item-title'>💬 상세 설명</div>
+                <p>{explanation_str}</p>
+            </div>
         </div>
+        """
+        
+        # --- 3. 루틴 v2.0 제안 HTML 생성 ---
+        routine_items = [line.strip()[2:] for line in routine_v2_str.split("\n") if line.strip().startswith("- ")]
+        routine_v2_html = "<ol class='routine-v2-list'>"
+        
+        for item in routine_items:
+            # **텍스트** 부분을 step-title로, 나머지를 step-content로 분리
+            match = re.match(r"\\*\\*(.*?)\\*\\*:\s*(.*)", item)
+            if match:
+                title, content = match.groups()
+                routine_v2_html += f"<li><div class='step-title'>{title}</div><div class='step-content'>{content}</div></li>"
+            else:
+                # 매칭되는 패턴이 없으면 전체를 content로 처리
+                routine_v2_html += f"<li><div class='step-content'>{item}</div></li>"
+        
+        routine_v2_html += "</ol>"
+
+        html += f"""
         <div class='result-card'>
-            <div class='result-header'>💡 루틴 v2.0 제안</div>
-            <div class='routine-box'>{routine_v2_html}</div>
+            <div class='result-header'><span class='result-header-icon'>💡</span>루틴 v2.0 제안</div>
+            {routine_v2_html}
         </div>
         """
         return html
+
+    # 파싱 실패 시 예외 처리
     except (AttributeError, IndexError):
-        return f"<div class='result-card'><div class='alert error'>AI의 답변 형식이 예상과 달라 자동으로 분석할 수 없습니다.</div><pre>{result_text}</pre></div>"
+        return f"<div class='result-card'><div class='alert error'>AI의 답변 형식이 예상과 달라 자동으로 분석할 수 없습니다. 아래 원본 답변을 확인해주세요.</div><pre style='white-space: pre-wrap; word-wrap: break-word; background-color: #f0f0f0; padding: 15px; border-radius: 8px;'>{result_text}</pre></div>"
 
 
 # --- 5. 메인 UI 구성 ---
@@ -254,7 +323,6 @@ st.markdown(
     unsafe_allow_html=True,
 )
 
-# <<<<<<< st.form과 st.form_submit_button을 사용하여 안정성과 디자인을 모두 해결
 with st.form("routine_form"):
     st.markdown(
         '<p class="input-label">어떤 종목의 선수이신가요?</p>', unsafe_allow_html=True
@@ -270,7 +338,7 @@ with st.form("routine_form"):
     )
     routine_type = st.text_input(
         "Routine Type",
-        placeholder="서브, 자유투, 타석 등",
+        placeholder="예: 서브, 자유투, 타석, 퍼팅 등",
         label_visibility="collapsed",
     )
 
@@ -279,7 +347,7 @@ with st.form("routine_form"):
     )
     current_routine = st.text_area(
         "Current Routine",
-        placeholder="공을 세번 튀기고, 심호흡을 깊게 한번 하고 바로 슛을 쏩니다",
+        placeholder="예: 공을 세번 튀기고, 심호흡을 깊게 한번 하고 바로 슛을 쏩니다.",
         height=140,
         label_visibility="collapsed",
     )
@@ -301,12 +369,12 @@ if "analysis_result" in st.session_state and st.session_state.analysis_result:
     st.divider()
     result_html = format_results_to_html(st.session_state.analysis_result)
 
-    # 이미지 저장 버튼은 커스텀 HTML로 구현
+    # 이미지 저장 버튼 및 결과 출력
     html_with_button = f"""
     <style>
         #save-btn {{
             width: 100%;
-            background: #2BA7D1; /* 참고한 앱의 버튼 색상과 동일하게 설정 */
+            background: #2BA7D1;
             color: white;
             border-radius: 12px;
             padding: 16px 0;
@@ -327,16 +395,21 @@ if "analysis_result" in st.session_state and st.session_state.analysis_result:
     <script>
     document.getElementById("save-btn").onclick = function() {{
         const captureElement = document.getElementById("capture-area");
-        window.scrollTo(0, 0);
+        // 이미지 캡쳐 전 스크롤을 최상단으로 이동하여 전체 영역이 보이도록 함
+        window.scrollTo(0, 0); 
         setTimeout(() => {{
-            html2canvas(captureElement, {{ scale: 2, backgroundColor: '#F1F2F5', useCORS: true }}).then(canvas => {{
+            html2canvas(captureElement, {{
+                scale: 2, // 해상도 2배로 높여 선명하게 저장
+                backgroundColor: '#F1F2F5', // 배경색 지정
+                useCORS: true
+            }}).then(canvas => {{
                 const image = canvas.toDataURL("image/png");
                 const link = document.createElement("a");
                 link.href = image;
                 link.download = "ai-routine-analysis.png";
                 link.click();
             }});
-        }}, 200);
+        }}, 200); // 렌더링을 위한 약간의 지연 시간
     }}
     </script>
     """
