@@ -38,19 +38,36 @@ def load_css():
     st.markdown(
         """
         <style>
-            .stApp { background-color: #F1F2F5; font-family: 'Helvetica', sans-serif; }
+            @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@300;400;500;600;700&family=Inter:wght@300;400;500;600;700&display=swap');
+
+            .stApp {
+                background: linear-gradient(135deg, #F8F9FC 0%, #F1F2F5 100%);
+                font-family: 'Noto Sans KR', 'Inter', 'Helvetica', sans-serif;
+            }
             .main .block-container { padding: 2rem 1.5rem; }
             .header-icon {
-                background-color: rgba(43, 167, 209, 0.1); border-radius: 50%; width: 52px; height: 52px;
-                display: flex; align-items: center; justify-content: center; font-size: 28px; margin-bottom: 12px;
+                background: linear-gradient(135deg, rgba(43, 167, 209, 0.15) 0%, rgba(98, 120, 246, 0.1) 100%);
+                border-radius: 50%; width: 52px; height: 52px;
+                display: flex; align-items: center; justify-content: center;
+                font-size: 28px; margin-bottom: 12px;
+                box-shadow: 0px 4px 12px rgba(43, 167, 209, 0.15);
             }
             .title { color: #0D1628; font-size: 24px; font-weight: 700; }
             .subtitle { color: #8692A2; font-size: 14px; margin-bottom: 30px; line-height: 1.6;}
             .input-label { color: #0D1628; font-size: 18px; font-weight: 700; margin-bottom: 12px; }
 
             .stTextInput > div > div > input, .stTextArea > div > div > textarea, .stSelectbox > div[data-baseweb="select"] > div {
-                background-color: #FFFFFF; border: 1px solid #E5E7EB; border-radius: 12px;
-                box-shadow: none; color: #0D1628;
+                background-color: #FFFFFF;
+                border: 1.5px solid #E5E7EB;
+                border-radius: 12px;
+                box-shadow: 0px 2px 8px rgba(0, 0, 0, 0.04);
+                color: #0D1628;
+                font-family: 'Noto Sans KR', sans-serif;
+                transition: all 0.2s ease;
+            }
+            .stTextInput > div > div > input:focus, .stTextArea > div > div > textarea:focus {
+                border-color: #2BA7D1;
+                box-shadow: 0px 0px 0px 3px rgba(43, 167, 209, 0.1);
             }
             .stSelectbox > div[data-baseweb="select"] > div { height: 48px; display: flex; align-items: center; }
             .stTextArea > div > div > textarea { height: 140px; }
@@ -61,18 +78,27 @@ def load_css():
                 font-size: 16px !important;
                 font-weight: 600 !important;
                 color: white !important;
-                background: linear-gradient(135deg, #2BA7D1 0%, #1A8BB0 100%) !important;
-                border: 2px solid #1A8BB0 !important;
-                border-radius: 16px !important;
-                box-shadow: 0px 4px 12px rgba(43, 167, 209, 0.3) !important;
+                background-color: #2BA7D1 !important;
+                background-image: linear-gradient(135deg, rgba(98, 120.20, 246, 0.20) 0%, rgba(29, 48, 78, 0) 100%) !important;
+                background: linear-gradient(135deg, rgba(98, 120.20, 246, 0.20) 0%, rgba(29, 48, 78, 0) 100%), #2BA7D1 !important;
+                border: none !important;
+                border-radius: 12px !important;
+                box-shadow: 0px 5px 10px rgba(26, 26, 26, 0.10) !important;
                 transition: all 0.3s ease !important;
                 margin-top: 20px !important;
+                font-family: 'Noto Sans KR', sans-serif !important;
+                letter-spacing: -0.2px !important;
             }
 
-            div[data-testid="stForm"] button[type="submit"]:hover {
-                background: linear-gradient(135deg, #1A8BB0 0%, #147A9D 100%) !important;
-                border: 2px solid #147A9D !important;
-                box-shadow: 0px 6px 16px rgba(43, 167, 209, 0.4) !important;
+            div[data-testid="stForm"] button[type="submit"]:hover,
+            div[data-testid="stForm"] button[kind="primaryFormSubmit"]:hover,
+            .stForm button[type="submit"]:hover,
+            button[kind="primaryFormSubmit"]:hover {
+                background-color: #1A8BB0 !important;
+                background-image: linear-gradient(135deg, rgba(98, 120.20, 246, 0.30) 0%, rgba(29, 48, 78, 0) 100%) !important;
+                background: linear-gradient(135deg, rgba(98, 120.20, 246, 0.30) 0%, rgba(29, 48, 78, 0) 100%), #1A8BB0 !important;
+                border: none !important;
+                box-shadow: 0px 6px 14px rgba(26, 26, 26, 0.15) !important;
                 transform: translateY(-2px) !important;
             }
         </style>
@@ -86,7 +112,7 @@ load_css()
 
 # --- 4. AI 모델 호출 및 결과 파싱 함수 ---
 def generate_routine_analysis(sport, routine_type, current_routine):
-    model = genai.GenerativeModel("gemini-1.5-flash")
+    model = genai.GenerativeModel("gemini-2.0-flash")
     prompt = f"""
     ### 과업 ###
     **매우 중요: 당신의 답변은 프로그램에 의해 자동으로 분석되므로, 반드시 아래 [출력 형식 예시]에 명시된 출력 형식과 구분자를 정확히 지켜야 합니다.**
@@ -187,32 +213,67 @@ def format_results_to_html(result_text):
     """
     try:
         if result_text.startswith("ERROR:::"):
-            error_message = result_text.replace('ERROR:::', '')
+            error_message = result_text.replace("ERROR:::", "")
             return f"{new_style}<div id='capture-area'><div class='result-section'><div class='section-header'>❌ 오류</div><div class='item-content'>AI 호출 중 오류가 발생했습니다: {error_message}</div></div></div>"
 
         # 각 섹션별 데이터 파싱
-        analysis_table_str = re.search(r":::ANALYSIS_TABLE_START:::(.*?):::ANALYSIS_TABLE_END:::", result_text, re.DOTALL).group(1).strip()
-        summary_full_str = re.search(r":::SUMMARY_START:::(.*?):::SUMMARY_END:::", result_text, re.DOTALL).group(1).strip()
-        routine_v2_str = re.search(r":::ROUTINE_V2_START:::(.*?):::ROUTINE_V2_END:::", result_text, re.DOTALL).group(1).strip()
+        analysis_table_str = (
+            re.search(
+                r":::ANALYSIS_TABLE_START:::(.*?):::ANALYSIS_TABLE_END:::",
+                result_text,
+                re.DOTALL,
+            )
+            .group(1)
+            .strip()
+        )
+        summary_full_str = (
+            re.search(
+                r":::SUMMARY_START:::(.*?):::SUMMARY_END:::", result_text, re.DOTALL
+            )
+            .group(1)
+            .strip()
+        )
+        routine_v2_str = (
+            re.search(
+                r":::ROUTINE_V2_START:::(.*?):::ROUTINE_V2_END:::",
+                result_text,
+                re.DOTALL,
+            )
+            .group(1)
+            .strip()
+        )
 
         # 상세 데이터 파싱
-        summary_str = re.search(r"한 줄 요약:\s*(.*?)\n", summary_full_str).group(1).strip()
-        explanation_str = re.search(r"상세 설명:\s*(.*)", summary_full_str, re.DOTALL).group(1).strip()
+        summary_str = (
+            re.search(r"한 줄 요약:\s*(.*?)\n", summary_full_str).group(1).strip()
+        )
+        explanation_str = (
+            re.search(r"상세 설명:\s*(.*)", summary_full_str, re.DOTALL)
+            .group(1)
+            .strip()
+        )
 
         # --- 1. 루틴 분석표 HTML 생성 ---
         html = f"{new_style}<div id='capture-area'>"
         html += "<div class='result-section'>"
         html += "<div class='section-header'>📊 루틴 분석표</div>"
-        
-        table_data = [line.split("|") for line in analysis_table_str.strip().split("\n") if "|" in line]
-        
+
+        table_data = [
+            line.split("|")
+            for line in analysis_table_str.strip().split("\n")
+            if "|" in line
+        ]
+
         for item, rating, comment in table_data:
             item, rating, comment = item.strip(), rating.strip(), comment.strip()
             icon = ""
-            if "Y" in rating: icon = "✅"
-            elif "▲" in rating: icon = "⚠️"
-            elif "N" in rating: icon = "❌"
-            
+            if "Y" in rating:
+                icon = "✅"
+            elif "▲" in rating:
+                icon = "⚠️"
+            elif "N" in rating:
+                icon = "❌"
+
             html += f"""
             <div class='analysis-item'>
                 <div class='item-title'>{item}</div>
@@ -234,12 +295,16 @@ def format_results_to_html(result_text):
             <div class='item-content'>{explanation_str}</div>
         </div>
         """
-        
+
         # --- 3. 루틴 v2.0 제안 HTML 생성 ---
         html += "<div class='result-section'>"
         html += "<div class='section-header'>💡 루틴 v2.0 제안</div>"
-        
-        routine_items = [line.strip()[2:] for line in routine_v2_str.split("\n") if line.strip().startswith("- ")]
+
+        routine_items = [
+            line.strip()[2:]
+            for line in routine_v2_str.split("\n")
+            if line.strip().startswith("- ")
+        ]
         for item in routine_items:
             match = re.match(r"\*\*(.*?)\*\*:\s*(.*)", item)
             if match:
@@ -247,7 +312,7 @@ def format_results_to_html(result_text):
                 html += f"<div class='routine-v2-item'><strong class='item-title'>{title}:</strong><span class='item-content'> {content}</span></div>"
             else:
                 html += f"<div class='routine-v2-item item-content'>{item}</div>"
-        
+
         html += "</div>"
         html += "</div>"
         return html
