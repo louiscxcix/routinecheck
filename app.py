@@ -18,7 +18,7 @@ st.markdown(
 # --- 2. API 키 설정 ---
 try:
     # Streamlit Cloud의 Secrets에서 API 키를 가져옵니다.
-    api_key = st.secrets["GEMINI_API_KEY"]
+    api_key = os.environ["GEMINI_API_KEY"]
 except (KeyError, FileNotFoundError):
     # 로컬 환경이나 Secrets가 설정되지 않은 경우 사이드바에서 입력받습니다.
     st.sidebar.warning("GEMINI_API_KEY를 찾을 수 없습니다. 직접 입력해주세요.")
